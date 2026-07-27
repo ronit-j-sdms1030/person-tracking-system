@@ -1,0 +1,46 @@
+import logging
+from typing import List, Dict, Any
+import numpy as np
+from ultralytics import YOLO
+
+logger = logging.getLogger(__name__)
+
+class Detector:
+    def __init__(self, model_path: str = "yolov8n-pose.pt", conf_thresh: float = 0.4):
+        logger.info(f"Loading YOLOv8n-pose model from {model_path}")
+        self.model = YOLO(model_path)
+        self.conf_thresh = conf_thresh
+
+    def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
+        results = self.model(frame, classes=[0], conf=self.conf_thresh, verbose=False)
+        return self._parse_results(results)
+
+    def track(self, frame: np.ndarray) -> List[Dict[str, Any]]:
+        results = self.model.track(frame, classes=[0], conf=self.conf_thresh, persist=True, verbose=False, tracker="bytetrack.yaml")
+        return self._parse_results(results)
+
+    def _parse_results(self, results) -> List[Dict[str, Any]]:
+        detections = []
+        for result in results:
+            boxes = result.boxes
+            keypoints = result.keypoints
+            
+            if boxes is None or keypoints is None:
+                continue
+
+            for i in range(len(boxes)):
+                box = boxes[i].xyxy[0].cpu().numpy().tolist()
+                conf = float(boxes[i].conf[0])
+                kpts = keypoints[i].data[0].cpu().numpy().tolist() if keypoints is not None else None
+                
+                track_id = None
+                if boxes[i].id is not None:
+                    track_id = int(boxes[i].id[0])
+
+                detections.append({
+                    "bbox": box,
+                    "keypoints": kpts,
+                    "conf": conf,
+                    "track_id": track_id
+                })
+        return detections

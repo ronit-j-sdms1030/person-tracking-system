@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pt
+*.pth
+logs/*.csv
+logs/*.json
+data/sample_videos/*.mp4
+.DS_Store
+runs/
