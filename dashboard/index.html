@@ -1,79 +1,441 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCTV People Counting Dashboard</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #e0e0e0;
-        }
-        #zones-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-        }
-        .zone-card {
-            background-color: #1e1e1e;
-            border-radius: 8px;
-            padding: 20px;
-            width: 300px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid #333;
-        }
-        .zone-title {
-            margin-top: 0;
-            font-size: 1.5em;
-            border-bottom: 1px solid #444;
-            padding-bottom: 10px;
-            color: #4db8ff;
-        }
-        .metric {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            font-size: 1.1em;
-        }
-        .metric-label {
-            color: #aaa;
-        }
-        .metric-val {
-            font-weight: bold;
-        }
-        .util-bar-bg {
-            background-color: #333;
-            height: 10px;
-            border-radius: 5px;
-            margin-top: 15px;
-            overflow: hidden;
-        }
-        .util-bar-fill {
-            height: 100%;
-            background-color: #4caf50;
-            transition: width 0.3s ease, background-color 0.3s ease;
-        }
-        .status-indicator {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 0.9em;
-            color: #888;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>People Counting · Live + Bounding Boxes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #12151A;
+      color: #E9EBF0;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 30px 20px 50px;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(62,207,142,0.06), transparent 40%),
+        radial-gradient(circle at 90% 10%, rgba(91,141,239,0.06), transparent 40%),
+        #12151A;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .header-left .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      color: #3ECF8E;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .rec-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #3ECF8E;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(62,207,142,0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(62,207,142,0); }
+      100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); }
+    }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 30px;
+      letter-spacing: -0.01em;
+      margin: 0 0 4px;
+    }
+    .header-left p {
+      color: #7C8494;
+      font-size: 14px;
+      margin: 0;
+    }
+    .live-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #7C8494;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1B2029;
+      padding: 6px 14px;
+      border-radius: 30px;
+      border: 1px solid #2A3140;
+    }
+    .live-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3ECF8E;
+      animation: pulse2 1.6s infinite;
+    }
+    @keyframes pulse2 {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* dual feed layout: 2 columns with live video + bounding boxes */
+    .feed-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    @media (max-width: 820px) {
+      .feed-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .feed-card {
+      background: #1B2029;
+      border: 1px solid #2A3140;
+      border-radius: 18px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+    .feed-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px 10px 18px;
+      border-bottom: 1px solid #2A3140;
+    }
+    .feed-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      background: var(--feed-color);
+      color: #12151A;
+    }
+    .feed-cam {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #7C8494;
+    }
+    .feed-live {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #7C8494;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feed-live .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--feed-color);
+      animation: pulse2 1.8s infinite;
+    }
+
+    /* Live video simulation with bounding boxes */
+    .video-container {
+      position: relative;
+      background: #0D1016;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-bottom: 1px solid #2A3140;
+    }
+    .video-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, #1e2a3a, #0a0d12 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #3a4455;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+    }
+    .video-bg span {
+      background: rgba(0,0,0,0.5);
+      padding: 6px 16px;
+      border-radius: 30px;
+      backdrop-filter: blur(2px);
+      border: 1px solid #2A3140;
+    }
+    /* bounding boxes */
+    .bbox {
+      position: absolute;
+      border: 2px solid var(--bbox-color, #5B8DEF);
+      border-radius: 4px;
+      background: rgba(0,0,0,0.25);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+      transition: all 0.1s;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+    .bbox .label {
+      position: absolute;
+      bottom: -22px;
+      right: -2px;
+      background: var(--bbox-color, #5B8DEF);
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px 4px 0 4px;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    /* different colors for boxes */
+    .bbox-1 { --bbox-color: #3ECF8E; border-color: #3ECF8E; }
+    .bbox-2 { --bbox-color: #F2B84B; border-color: #F2B84B; }
+    .bbox-3 { --bbox-color: #5B8DEF; border-color: #5B8DEF; }
+    .bbox-4 { --bbox-color: #B387F5; border-color: #B387F5; }
+    .bbox-5 { --bbox-color: #F0553F; border-color: #F0553F; }
+    .bbox-6 { --bbox-color: #3ECF8E; border-color: #3ECF8E; }
+    .bbox-7 { --bbox-color: #F2B84B; border-color: #F2B84B; }
+
+    /* feed stats (below video) */
+    .feed-stats {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 18px 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .stat-group {
+      display: flex;
+      gap: 24px;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-item .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 22px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+    .stat-item .lbl {
+      font-size: 11px;
+      color: #7C8494;
+      letter-spacing: 0.02em;
+    }
+    .stat-item.in .num { color: #3ECF8E; }
+    .stat-item.out .num { color: #F0553F; }
+    .stat-item.sit .num { color: #5B8DEF; }
+    .stat-item.stand .num { color: #B387F5; }
+    .stat-item.net .num { color: #E9EBF0; }
+
+    .mini-bar {
+      display: flex;
+      height: 6px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #2A3140;
+      width: 100%;
+      margin-top: 6px;
+    }
+    .mini-bar .fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .fill-sit { background: #5B8DEF; }
+    .fill-stand { background: #B387F5; }
+
+    /* footer legend */
+    .legend {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #7C8494;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+    .legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* misc */
+    .text-muted { color: #7C8494; }
+    .mt-1 { margin-top: 4px; }
+  </style>
 </head>
 <body>
-    <h1>People Counting Dashboard</h1>
-    <div class="status-indicator" id="connection-status">Connecting...</div>
-    <div id="zones-container"></div>
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="eyebrow"><span class="rec-dot"></span><span id="connection-status">Live</span> · Site: office_pune_01</div>
+      <h1>People Counting</h1>
+      <p>Main Floor — dual camera feed with bounding boxes</p>
+    </div>
+    <div class="live-badge">
+      <span class="dot"></span> Streaming · 2 feeds
+    </div>
+  </header>
 
-    <script src="/static/app.js"></script>
+  <!-- two camera feeds with bounding boxes -->
+  <div class="feed-grid">
+
+    <!-- Feed 1: Doorway (Entry/Exit) -->
+    <div class="feed-card">
+      <div class="feed-header">
+        <div>
+          <span class="feed-tag" style="--feed-color: #3ECF8E;">FEED 1</span>
+          <span class="feed-cam">cam_door_1</span>
+        </div>
+        <div class="feed-live">
+          <span class="pulse-dot" style="--feed-color: #3ECF8E;"></span> Live
+        </div>
+      </div>
+      <div class="video-container">
+        <div class="video-bg"><span>📹 doorway view</span></div>
+        <!-- bounding boxes -->
+        <div class="bbox bbox-1" style="top: 18%; left: 10%; width: 12%; height: 28%;">
+          <span class="label">P1</span>
+        </div>
+        <div class="bbox bbox-2" style="top: 45%; left: 30%; width: 10%; height: 24%;">
+          <span class="label">P2</span>
+        </div>
+        <div class="bbox bbox-3" style="top: 30%; left: 60%; width: 14%; height: 32%;">
+          <span class="label">P3</span>
+        </div>
+        <div class="bbox bbox-4" style="top: 60%; left: 78%; width: 10%; height: 22%;">
+          <span class="label">P4</span>
+        </div>
+        <div class="bbox bbox-5" style="top: 12%; left: 82%; width: 9%; height: 20%;">
+          <span class="label">P5</span>
+        </div>
+      </div>
+      <div class="feed-stats">
+        <div class="stat-group">
+          <div class="stat-item in"><span class="num" id="door-in">0</span><span class="lbl">IN</span></div>
+          <div class="stat-item out"><span class="num" id="door-out">0</span><span class="lbl">OUT</span></div>
+          <div class="stat-item net"><span class="num" id="door-net">0</span><span class="lbl">net</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feed 2: Interior (Posture) -->
+    <div class="feed-card">
+      <div class="feed-header">
+        <div>
+          <span class="feed-tag" style="--feed-color: #5B8DEF;">FEED 2</span>
+          <span class="feed-cam">cam_room_1</span>
+        </div>
+        <div class="feed-live">
+          <span class="pulse-dot" style="--feed-color: #5B8DEF;"></span> Live
+        </div>
+      </div>
+      <div class="video-container">
+        <div class="video-bg"><span>📹 interior view</span></div>
+        <!-- bounding boxes -->
+        <div class="bbox bbox-2" style="top: 25%; left: 8%; width: 11%; height: 26%;">
+          <span class="label">P6</span>
+        </div>
+        <div class="bbox bbox-6" style="top: 40%; left: 25%; width: 10%; height: 22%;">
+          <span class="label">P7</span>
+        </div>
+        <div class="bbox bbox-7" style="top: 20%; left: 45%; width: 13%; height: 30%;">
+          <span class="label">P8</span>
+        </div>
+        <div class="bbox bbox-1" style="top: 55%; left: 55%; width: 11%; height: 24%;">
+          <span class="label">P9</span>
+        </div>
+        <div class="bbox bbox-4" style="top: 30%; left: 72%; width: 9%; height: 20%;">
+          <span class="label">P10</span>
+        </div>
+        <div class="bbox bbox-3" style="top: 60%; left: 85%; width: 10%; height: 22%;">
+          <span class="label">P11</span>
+        </div>
+        <div class="bbox bbox-5" style="top: 10%; left: 88%; width: 8%; height: 18%;">
+          <span class="label">P12</span>
+        </div>
+      </div>
+      <div class="feed-stats">
+        <div class="stat-group">
+          <div class="stat-item sit"><span class="num" id="room-sit">0</span><span class="lbl">Sitting</span></div>
+          <div class="stat-item stand"><span class="num" id="room-stand">0</span><span class="lbl">Standing</span></div>
+        </div>
+        <div style="min-width:120px;">
+          <div class="mini-bar">
+            <div class="fill fill-sit" id="bar-sit" style="width:0%"></div>
+            <div class="fill fill-stand" id="bar-stand" style="width:0%"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:9px; color:#7C8494; margin-top:2px;">
+            <span id="lbl-sit">sit 0%</span>
+            <span id="lbl-stand">stand 0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- combined overview gauge (like original) -->
+  <div style="background:#1B2029; border:1px solid #2A3140; border-radius:14px; padding:20px 24px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; margin-top:8px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="position:relative; width:80px; height:80px;">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#2A3140" stroke-width="6"/>
+          <circle id="util-ring" cx="40" cy="40" r="32" fill="none" stroke="#3ECF8E" stroke-width="6" stroke-linecap="round"
+                  stroke-dasharray="201" stroke-dashoffset="201" transform="rotate(-90 40 40)" style="transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease;" />
+        </svg>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <span id="total-occupancy" style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:20px;">0</span>
+          <span id="capacity-max" style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#7C8494;">/0</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px;">Main Floor</div>
+        <div id="util-badge" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#3ECF8E; background:rgba(62,207,142,0.14); display:inline-block; padding:2px 10px; border-radius:12px; margin-top:2px;">Comfortable · 0%</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:28px; flex-wrap:wrap;">
+      <div><span id="total-remaining" style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px;">0</span><span style="color:#7C8494; font-size:12px; margin-left:6px;">remaining</span></div>
+      <div><span id="total-entered" style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px;">0</span><span style="color:#7C8494; font-size:12px; margin-left:6px;">entered</span></div>
+      <div><span id="total-exited" style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px;">0</span><span style="color:#7C8494; font-size:12px; margin-left:6px;">exited</span></div>
+    </div>
+  </div>
+
+  <!-- legend -->
+  <div class="legend">
+    <span><i style="background:#3ECF8E;"></i>Comfortable &lt;70%</span>
+    <span><i style="background:#F2B84B;"></i>Busy 70–90%</span>
+    <span><i style="background:#F0553F;"></i>At capacity &gt;90%</span>
+    <span style="color:#7C8494;">|</span>
+    <span><i style="background:#5B8DEF; width:8px; height:8px; border-radius:2px;"></i> Sitting</span>
+    <span><i style="background:#B387F5; width:8px; height:8px; border-radius:2px;"></i> Standing</span>
+  </div>
+</div>
+<script src="/static/app.js"></script>
 </body>
 </html>

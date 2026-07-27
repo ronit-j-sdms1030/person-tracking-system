@@ -1,38 +1,77 @@
-const container = document.getElementById('zones-container');
 const statusIndicator = document.getElementById('connection-status');
 let ws = null;
 let pollingInterval = null;
 
 function renderZone(zoneData) {
-    let card = document.getElementById(`zone-${zoneData.zone_id}`);
-    if (!card) {
-        card = document.createElement('div');
-        card.id = `zone-${zoneData.zone_id}`;
-        card.className = 'zone-card';
-        container.appendChild(card);
+    if (zoneData.zone_id !== 'main_floor') return;
+
+    // Doorway stats
+    document.getElementById('door-in').textContent = zoneData.entered_today;
+    document.getElementById('door-out').textContent = zoneData.exited_today;
+    
+    // Net is occupancy (entry/exit based)
+    const net = zoneData.entered_today - zoneData.exited_today;
+    const netEl = document.getElementById('door-net');
+    netEl.textContent = (net >= 0 ? '+' : '') + net;
+    netEl.style.color = net >= 0 ? '#E9EBF0' : '#F0553F'; // Optional styling for negative
+
+    // Room stats
+    const sit = zoneData.sitting_count;
+    const stand = zoneData.standing_count;
+    const totalPosture = sit + stand;
+    
+    document.getElementById('room-sit').textContent = sit;
+    document.getElementById('room-stand').textContent = stand;
+
+    const sitPct = totalPosture === 0 ? 0 : Math.round((sit / totalPosture) * 100);
+    const standPct = totalPosture === 0 ? 0 : Math.round((stand / totalPosture) * 100);
+    
+    document.getElementById('bar-sit').style.width = sitPct + '%';
+    document.getElementById('bar-stand').style.width = standPct + '%';
+    
+    document.getElementById('lbl-sit').textContent = 'sit ' + sitPct + '%';
+    document.getElementById('lbl-stand').textContent = 'stand ' + standPct + '%';
+
+    // Global Zone stats (Bottom summary)
+    document.getElementById('total-occupancy').textContent = zoneData.current_occupancy;
+    document.getElementById('capacity-max').textContent = '/' + zoneData.capacity_max;
+    
+    document.getElementById('total-remaining').textContent = zoneData.remaining_capacity;
+    document.getElementById('total-entered').textContent = zoneData.entered_today;
+    document.getElementById('total-exited').textContent = zoneData.exited_today;
+
+    // Gauge calculation
+    // Circle circumference is approx 201 (2 * PI * r where r=32 -> 2 * 3.14 * 32 = 201.06)
+    const utilPct = zoneData.utilization_pct;
+    const offset = 201 - (201 * Math.min(utilPct, 100) / 100);
+    const ring = document.getElementById('util-ring');
+    ring.style.strokeDashoffset = offset;
+
+    let utilColor = '#3ECF8E'; // Comfortable
+    let utilText = 'Comfortable · ' + utilPct + '%';
+    let utilBg = 'rgba(62,207,142,0.14)';
+    
+    if (utilPct >= 90) {
+        utilColor = '#F0553F'; // At capacity
+        utilText = 'At capacity · ' + utilPct + '%';
+        utilBg = 'rgba(240,85,63,0.14)';
+    } else if (utilPct >= 70) {
+        utilColor = '#F2B84B'; // Busy
+        utilText = 'Busy · ' + utilPct + '%';
+        utilBg = 'rgba(242,184,75,0.14)';
     }
+
+    ring.style.stroke = utilColor;
     
-    const utilColor = zoneData.utilization_pct > 90 ? '#f44336' : (zoneData.utilization_pct > 75 ? '#ff9800' : '#4caf50');
-    
-    card.innerHTML = `
-        <h2 class="zone-title">${zoneData.zone_id}</h2>
-        <div class="metric"><span class="metric-label">Occupancy:</span><span class="metric-val">${zoneData.current_occupancy}</span></div>
-        <div class="metric"><span class="metric-label">Capacity Max:</span><span class="metric-val">${zoneData.capacity_max}</span></div>
-        <div class="metric"><span class="metric-label">Remaining:</span><span class="metric-val">${zoneData.remaining_capacity}</span></div>
-        <div class="metric"><span class="metric-label">Entered Today:</span><span class="metric-val">${zoneData.entered_today}</span></div>
-        <div class="metric"><span class="metric-label">Exited Today:</span><span class="metric-val">${zoneData.exited_today}</span></div>
-        <div class="metric"><span class="metric-label">Sitting:</span><span class="metric-val">${zoneData.sitting_count}</span></div>
-        <div class="metric"><span class="metric-label">Standing:</span><span class="metric-val">${zoneData.standing_count}</span></div>
-        <div class="metric"><span class="metric-label">Utilization:</span><span class="metric-val">${zoneData.utilization_pct}%</span></div>
-        <div class="util-bar-bg">
-            <div class="util-bar-fill" style="width: ${Math.min(zoneData.utilization_pct, 100)}%; background-color: ${utilColor};"></div>
-        </div>
-    `;
+    const badge = document.getElementById('util-badge');
+    badge.textContent = utilText;
+    badge.style.color = utilColor;
+    badge.style.backgroundColor = utilBg;
 }
 
 function handleInitialState(data) {
-    for (const [zoneId, zoneData] of Object.entries(data)) {
-        renderZone(zoneData);
+    if (data.main_floor) {
+        renderZone(data.main_floor);
     }
 }
 
@@ -42,12 +81,12 @@ async function fetchStatus() {
         if (response.ok) {
             const data = await response.json();
             handleInitialState(data);
-            statusIndicator.textContent = "Connected (Polling)";
-            statusIndicator.style.color = "#ff9800";
+            statusIndicator.textContent = "Polling";
+            statusIndicator.style.color = "#F2B84B";
         }
     } catch (e) {
-        statusIndicator.textContent = "Disconnected";
-        statusIndicator.style.color = "#f44336";
+        statusIndicator.textContent = "Offline";
+        statusIndicator.style.color = "#F0553F";
     }
 }
 
@@ -58,8 +97,8 @@ function connectWebSocket() {
     ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
-        statusIndicator.textContent = "Connected (WebSocket)";
-        statusIndicator.style.color = "#4caf50";
+        statusIndicator.textContent = "Live";
+        statusIndicator.style.color = "#3ECF8E";
         if (pollingInterval) {
             clearInterval(pollingInterval);
             pollingInterval = null;
@@ -76,16 +115,14 @@ function connectWebSocket() {
     };
     
     ws.onclose = () => {
-        statusIndicator.textContent = "WebSocket dropped. Falling back to polling...";
-        statusIndicator.style.color = "#f44336";
+        statusIndicator.textContent = "Reconnecting...";
+        statusIndicator.style.color = "#F0553F";
         if (!pollingInterval) {
             pollingInterval = setInterval(fetchStatus, 3000);
-            fetchStatus(); // immediate fetch
+            fetchStatus();
         }
-        // Try to reconnect WS after 5s
         setTimeout(connectWebSocket, 5000);
     };
 }
 
-// Start
 connectWebSocket();
