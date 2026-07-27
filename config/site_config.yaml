@@ -1,8 +1,20 @@
 site_id: office_pune_01
+
+# ============================================================
+#  TESTING STAGES — uncomment the stage you want to run
+#  Only ONE stage should be active at a time per camera.
+# ============================================================
+
 zones:
   - zone_id: main_floor
     capacity_max: 40
     cameras:
+
+      # ----------------------------------------------------------
+      # CAMERA 1 — Entry/Exit (doorway)
+      # ----------------------------------------------------------
+
+      # STAGE 1: Local video file
       - camera_id: cam_door_1
         adapter: file
         source: data/sample_videos/doorway_footage.mp4
@@ -11,7 +23,51 @@ zones:
         direction_in: down
         cooldown_seconds: 2.0
         cooldown_px: 40
+        frame_skip: 1
+
+      # STAGE 2: Recorded / live RTSP feed
+      # - camera_id: cam_door_1
+      #   adapter: rtsp
+      #   source: rtsp://192.168.1.10:554/stream1
+      #   role: entry_exit
+      #   line: {p1: [120, 400], p2: [520, 410]}
+      #   direction_in: down
+      #   cooldown_seconds: 2.0
+      #   cooldown_px: 40
+      #   frame_skip: 2   # increase if RTSP is slow
+
+      # STAGE 3: Live USB / webcam
+      # - camera_id: cam_door_1
+      #   adapter: usb
+      #   source: "0"    # 0 = first webcam, 1 = second, etc.
+      #   role: entry_exit
+      #   line: {p1: [120, 400], p2: [520, 410]}
+      #   direction_in: down
+      #   cooldown_seconds: 2.0
+      #   cooldown_px: 40
+      #   frame_skip: 1
+
+      # ----------------------------------------------------------
+      # CAMERA 2 — Posture (interior room)
+      # ----------------------------------------------------------
+
+      # STAGE 1: Local video file
       - camera_id: cam_room_1
         adapter: file
         source: data/sample_videos/interior_footage.mp4
         role: posture
+        frame_skip: 1
+
+      # STAGE 2: Recorded / live RTSP feed
+      # - camera_id: cam_room_1
+      #   adapter: rtsp
+      #   source: rtsp://192.168.1.11:554/stream1
+      #   role: posture
+      #   frame_skip: 2
+
+      # STAGE 3: Live USB / webcam
+      # - camera_id: cam_room_1
+      #   adapter: usb
+      #   source: "1"    # second webcam
+      #   role: posture
+      #   frame_skip: 1

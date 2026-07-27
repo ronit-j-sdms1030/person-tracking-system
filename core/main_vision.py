@@ -5,116 +5,170 @@ import threading
 import logging
 from typing import Dict, Any
 
+from core.adapters.base import CameraSource
 from core.adapters.rtsp import RTSPSource
+from core.adapters.file_source import FileSource
+from core.adapters.usb import USBSource
 from core.pipeline.detector import Detector
 from core.pipeline.tracker import Tracker
 from core.pipeline.entry_exit import EntryExitLogic
 from core.pipeline.posture import PostureLogic
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Adapter factory — driven entirely by site_config.yaml `adapter:` field
+#   file  → local .mp4 / .avi   (Stage 1: video testing)
+#   rtsp  → RTSP IP camera      (Stage 2: recorded / live network feed)
+#   usb   → webcam / USB cam    (Stage 3: live USB camera)
+# ---------------------------------------------------------------------------
+def build_adapter(cam_config: Dict[str, Any]) -> CameraSource:
+    adapter_type = cam_config.get("adapter", "rtsp").lower()
+    camera_id = cam_config["camera_id"]
+    source = str(cam_config["source"])
+
+    if adapter_type == "file":
+        logger.info(f"[{camera_id}] Using FileSource  → {source}")
+        return FileSource(camera_id, source)
+    elif adapter_type == "usb":
+        logger.info(f"[{camera_id}] Using USBSource   → device {source}")
+        return USBSource(camera_id, source)
+    else:  # rtsp (default)
+        logger.info(f"[{camera_id}] Using RTSPSource  → {source}")
+        return RTSPSource(camera_id, source)
+
 
 class VisionRunner:
     def __init__(self, config_path: str, shared_queue: queue.Queue):
         self.config_path = config_path
         self.queue = shared_queue
-        
-        with open(self.config_path, 'r') as f:
+
+        with open(self.config_path, "r") as f:
             self.config = yaml.safe_load(f)
-            
+
         self.cameras_config = self._extract_cameras(self.config)
         self.threads = []
         self.running = False
 
     def _extract_cameras(self, config: Dict[str, Any]) -> list:
         cameras = []
-        for zone in config.get('zones', []):
-            for cam in zone.get('cameras', []):
+        for zone in config.get("zones", []):
+            for cam in zone.get("cameras", []):
                 cameras.append(cam)
         return cameras
 
     def _run_camera(self, cam_config: Dict[str, Any]):
-        camera_id = cam_config['camera_id']
-        source = cam_config['source']
-        role = cam_config['role']
-        
-        logger.info(f"Starting camera {camera_id} with role {role}")
-        
-        cam_source = RTSPSource(camera_id, source)
+        camera_id = cam_config["camera_id"]
+        role = cam_config["role"]
+
+        logger.info(f"[{camera_id}] Starting | role={role}")
+
+        cam_source = build_adapter(cam_config)
         detector = Detector()
-        tracker = Tracker(detector, frame_skip=1)
-        
-        entry_exit_logic = None
-        posture_logic = None
-        
-        if role == "entry_exit":
-            entry_exit_logic = EntryExitLogic(cam_config)
-        elif role == "posture":
-            posture_logic = PostureLogic()
-            
+        tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))
+
+        entry_exit_logic = EntryExitLogic(cam_config) if role == "entry_exit" else None
+        posture_logic = PostureLogic() if role == "posture" else None
+
+        consecutive_none = 0
+        MAX_NONE = 30  # stop after 30 consecutive None frames (file EOF or dead stream)
+
         while self.running:
             frame = cam_source.read_frame()
+
             if frame is None:
-                time.sleep(0.1)
+                consecutive_none += 1
+                if consecutive_none >= MAX_NONE:
+                    logger.info(f"[{camera_id}] Stream ended or source exhausted — stopping camera thread.")
+                    break
+                time.sleep(0.05)
                 continue
-                
+            consecutive_none = 0
+
             current_time = time.time()
             detections = tracker.process_frame(frame)
-            
+
             for d in detections:
-                track_id = d.get('track_id')
+                track_id = d.get("track_id")
                 if track_id is None:
                     continue
-                    
+
                 event_type = None
                 posture_state = None
-                
+
                 if role == "entry_exit":
-                    event_type = entry_exit_logic.process(track_id, d['bbox'], current_time)
+                    event_type = entry_exit_logic.process(track_id, d["bbox"], current_time)
                     if event_type is None:
-                        continue
-                        
+                        continue  # only emit on actual crossings
+
                 elif role == "posture":
-                    posture_state = posture_logic.process(d.get('keypoints', []))
-                    
+                    posture_state = posture_logic.process(d.get("keypoints", []))
+
                 event_dict = {
                     "camera_id": camera_id,
                     "timestamp": current_time,
                     "track_id": track_id,
-                    "bbox": d['bbox'],
+                    "bbox": [round(v, 1) for v in d["bbox"]],
                     "event": event_type,
-                    "posture": posture_state
+                    "posture": posture_state,
                 }
                 self.queue.put(event_dict)
-                logger.info(f"Emitted event: {event_dict}")
-                
+                logger.info(f"[{camera_id}] EVENT → {event_dict}")
+
         cam_source.release()
+        logger.info(f"[{camera_id}] Camera thread exited cleanly.")
 
     def start(self):
         self.running = True
         for cam_config in self.cameras_config:
-            t = threading.Thread(target=self._run_camera, args=(cam_config,), daemon=True)
+            t = threading.Thread(
+                target=self._run_camera,
+                args=(cam_config,),
+                name=f"cam-{cam_config['camera_id']}",
+                daemon=True,
+            )
             self.threads.append(t)
             t.start()
+            logger.info(f"Thread started: {t.name}")
 
     def stop(self):
+        logger.info("Stopping all camera threads...")
         self.running = False
         for t in self.threads:
-            t.join()
+            t.join(timeout=10)
+        logger.info("All threads stopped.")
 
+
+# ---------------------------------------------------------------------------
+# CLI entrypoint — for running standalone (stdout events)
+# Usage: python -m core.main_vision config/site_config.yaml
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import sys
-    config_file = sys.argv[1] if len(sys.argv) > 1 else "../person-tracking-system-ref/config/site_config.yaml"
+
+    config_file = sys.argv[1] if len(sys.argv) > 1 else "config/site_config.yaml"
     q = queue.Queue()
     runner = VisionRunner(config_file, q)
+
     try:
         runner.start()
+        print(f"\n✅ Pipeline running. Reading config: {config_file}")
+        print("   Press Ctrl+C to stop.\n")
         while True:
             try:
                 ev = q.get(timeout=1.0)
-                # stdout for test verification
                 print(f"EVENT: {ev}")
             except queue.Empty:
-                pass
+                # Check if all threads are done (e.g. video file ended)
+                if not any(t.is_alive() for t in runner.threads):
+                    print("\n📹 All video sources exhausted. Done.")
+                    break
     except KeyboardInterrupt:
+        print("\n🛑 Interrupted by user.")
+    finally:
         runner.stop()
