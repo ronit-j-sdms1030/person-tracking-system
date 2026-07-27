@@ -27,46 +27,97 @@
       margin: 0 auto;
     }
 
-    /* header with Stark Digital branding */
-    .brand {
+    /* ===== LOGO ===== */
+    .logo-container {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
       border-bottom: 1px solid #252C3A;
-      padding-bottom: 18px;
+      flex-wrap: wrap;
     }
-    .brand-left h1 {
+    #logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+    }
+    
+    /* Inline SVG Logo Styling */
+    .logo-svg {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+    }
+    
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .logo-text .main {
       font-family: 'Space Grotesk', sans-serif;
-      font-weight: 600;
-      font-size: 28px;
+      font-weight: 700;
+      font-size: 26px;
       letter-spacing: -0.02em;
-      margin: 0 0 4px;
+      color: #FFFFFF;
+      line-height: 1.1;
     }
-    .brand-left h1 span {
-      color: #3ECF8E;
-    }
-    .brand-left .sub {
-      font-size: 14px;
-      color: #7C8494;
+    .logo-text .sub {
+      font-family: 'Inter', sans-serif;
       font-weight: 400;
+      font-size: 12px;
+      color: #7C8494;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .logo-text .sub span {
+      color: #FF5722;
+    }
+    .logo-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-left: auto;
+    }
+    .btn-download {
+      background: linear-gradient(135deg, #FF5722, #E64A19);
+      border: none;
+      color: #FFFFFF;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 8px 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-download:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(255,87,34,0.3);
+    }
+    .btn-download:active {
+      transform: scale(0.95);
     }
     .live-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+      font-size: 11px;
       color: #7C8494;
       display: flex;
       align-items: center;
       gap: 8px;
       background: #1B2029;
-      padding: 6px 16px;
+      padding: 5px 14px;
       border-radius: 40px;
       border: 1px solid #2A3140;
     }
     .live-badge .dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: #3ECF8E;
       animation: pulse-dot 1.6s infinite;
@@ -76,7 +127,7 @@
       50% { opacity: 0.25; }
     }
 
-    /* feed grid : 2 columns */
+    /* feed grid */
     .feed-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -198,7 +249,7 @@
     .bbox-6 { --bbox-color: #3ECF8E; border-color: #3ECF8E; }
     .bbox-7 { --bbox-color: #F2B84B; border-color: #F2B84B; }
 
-    /* stats grid exactly as per image: Total Capacity, Present, Remaining, Entered, Exited Leaving */
+    /* stats grid */
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
@@ -242,7 +293,56 @@
     .stat-entered { --stat-color: #B387F5; }
     .stat-exited { --stat-color: #F0553F; }
 
-    /* footer legend */
+    /* summary bar */
+    .summary-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      background: #161C24;
+      border: 1px solid #252C3A;
+      border-radius: 18px;
+      padding: 18px 22px;
+      margin-top: 8px;
+    }
+    .summary-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .summary-group .cam-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #5E6A7A;
+    }
+    .summary-group .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    .summary-group .desc {
+      color: #7C8494;
+      font-size: 13px;
+    }
+    .summary-divider {
+      color: #3A4555;
+    }
+    .summary-tags {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .summary-tags .tag {
+      background: #2A3140;
+      padding: 2px 12px;
+      border-radius: 30px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #B7C0D0;
+    }
+
+    /* legend */
     .legend {
       display: flex;
       gap: 28px;
@@ -262,27 +362,38 @@
       border-radius: 50%;
       margin-right: 6px;
     }
-
-    .cam-label-small {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: #5E6A7A;
-      margin: 6px 0 2px 16px;
-      letter-spacing: 0.04em;
-    }
   </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- Stark Digital header -->
-  <div class="brand">
-    <div class="brand-left">
-      <h1><span>Stark</span> Digital</h1>
-      <div class="sub">Real Time Person Tracking System</div>
+  <!-- ===== LOGO with Download Button ===== -->
+  <div class="logo-container">
+    <div id="logo-wrapper">
+      <!-- Inline SVG Logo matching the uploaded design -->
+      <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#FF5722;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#FF8A65;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <!-- Outer swoosh -->
+        <path d="M 50 15 C 20 15 15 45 15 65 C 15 85 35 95 50 95 C 75 95 85 75 85 60 C 85 45 75 35 75 35 C 75 35 60 65 35 55 C 20 45 35 25 50 25 C 65 25 75 40 75 40 C 85 25 65 15 50 15 Z" fill="url(#grad1)" />
+        <!-- Inner contrasting swoosh element -->
+        <path d="M 75 60 C 85 75 75 95 50 95 C 35 95 30 85 30 85 C 30 85 50 90 65 80 C 75 70 75 60 75 60 Z" fill="#FF8A65" opacity="0.8"/>
+      </svg>
+
+      <div class="logo-text">
+        <div class="main">Stark Digital</div>
+        <div class="sub">Intelligent <span>·</span> Privacy-first <span>·</span> Live Analytics</div>
+      </div>
     </div>
-    <div class="live-badge">
-      <span class="dot"></span> <span id="connection-status">Live</span>
+
+    <div class="logo-actions">
+      <div class="live-badge">
+        <span class="dot"></span> <span id="connection-status">Live</span>
+      </div>
     </div>
   </div>
 
@@ -297,7 +408,6 @@
       </div>
       <div class="video-box">
         <div class="video-placeholder"><span>📹 doorway view</span></div>
-        <!-- bounding boxes -->
         <div class="bbox bbox-1" style="top: 15%; left: 8%; width: 13%; height: 28%;"><span class="label">P1</span></div>
         <div class="bbox bbox-2" style="top: 42%; left: 28%; width: 11%; height: 24%;"><span class="label">P2</span></div>
         <div class="bbox bbox-3" style="top: 28%; left: 58%; width: 14%; height: 32%;"><span class="label">P3</span></div>
@@ -305,7 +415,6 @@
         <div class="bbox bbox-5" style="top: 10%; left: 84%; width: 9%; height: 18%;"><span class="label">P5</span></div>
         <div class="bbox bbox-6" style="top: 55%; left: 45%; width: 10%; height: 20%;"><span class="label">P6</span></div>
       </div>
-      <!-- stats: Total Capacity, Present, Remaining, Entered, Exited Leaving -->
       <div class="stats-grid">
         <div class="stat-item stat-capacity"><span class="value" id="c1-cap">0</span><span class="label">Total Cap.</span></div>
         <div class="stat-item stat-present"><span class="value" id="c1-present">0</span><span class="label">Present</span></div>
@@ -315,7 +424,7 @@
       </div>
     </div>
 
-    <!-- Cam 2 (interior) -->
+    <!-- Cam 2 -->
     <div class="cam-card">
       <div class="cam-header">
         <div class="cam-title">CAM 2 <small>interior</small></div>
@@ -323,7 +432,6 @@
       </div>
       <div class="video-box">
         <div class="video-placeholder"><span>📹 room view</span></div>
-        <!-- bounding boxes -->
         <div class="bbox bbox-2" style="top: 22%; left: 6%; width: 12%; height: 26%;"><span class="label">P7</span></div>
         <div class="bbox bbox-5" style="top: 45%; left: 22%; width: 10%; height: 22%;"><span class="label">P8</span></div>
         <div class="bbox bbox-7" style="top: 18%; left: 44%; width: 14%; height: 32%;"><span class="label">P9</span></div>
@@ -332,7 +440,6 @@
         <div class="bbox bbox-3" style="top: 62%; left: 82%; width: 10%; height: 22%;"><span class="label">P12</span></div>
         <div class="bbox bbox-6" style="top: 8%; left: 88%; width: 8%; height: 16%;"><span class="label">P13</span></div>
       </div>
-      <!-- stats: Total Capacity, Present, Remaining, Entered, Exited Leaving -->
       <div class="stats-grid">
         <div class="stat-item stat-capacity"><span class="value" id="c2-cap">0</span><span class="label">Total Cap.</span></div>
         <div class="stat-item stat-present"><span class="value" id="c2-present">0</span><span class="label">Present</span></div>
@@ -343,27 +450,27 @@
     </div>
   </div>
 
-  <!-- combined summary -->
-  <div style="display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: #161C24; border: 1px solid #252C3A; border-radius: 18px; padding: 18px 22px; margin-top: 8px;">
-    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5E6A7A;">CAM 1</span>
-      <span id="s-c1-present" style="font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 18px;">0</span>
-      <span style="color: #7C8494; font-size: 13px;">present</span>
-      <span style="color: #3A4555;">|</span>
-      <span id="s-c1-remaining" style="font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 18px;">0</span>
-      <span style="color: #7C8494; font-size: 13px;">remain</span>
+  <!-- summary bar -->
+  <div class="summary-bar">
+    <div class="summary-group">
+      <span class="cam-label">CAM 1</span>
+      <span class="num" id="s-c1-present">0</span>
+      <span class="desc">present</span>
+      <span class="summary-divider">|</span>
+      <span class="num" id="s-c1-remaining">0</span>
+      <span class="desc">remain</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5E6A7A;">CAM 2</span>
-      <span id="s-c2-present" style="font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 18px;">0</span>
-      <span style="color: #7C8494; font-size: 13px;">present</span>
-      <span style="color: #3A4555;">|</span>
-      <span id="s-c2-remaining" style="font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 18px;">0</span>
-      <span style="color: #7C8494; font-size: 13px;">remain</span>
+    <div class="summary-group">
+      <span class="cam-label">CAM 2</span>
+      <span class="num" id="s-c2-present">0</span>
+      <span class="desc">present</span>
+      <span class="summary-divider">|</span>
+      <span class="num" id="s-c2-remaining">0</span>
+      <span class="desc">remain</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <span id="s-total-occupancy" style="background: #2A3140; padding: 2px 12px; border-radius: 30px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #B7C0D0;">total 0</span>
-      <span id="s-total-entered" style="background: #2A3140; padding: 2px 12px; border-radius: 30px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #B7C0D0;">entered 0</span>
+    <div class="summary-tags">
+      <span class="tag" id="s-total-occupancy">total 0</span>
+      <span class="tag" id="s-total-entered">entered 0</span>
     </div>
   </div>
 
