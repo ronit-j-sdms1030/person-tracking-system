@@ -5,68 +5,35 @@ let pollingInterval = null;
 function renderZone(zoneData) {
     if (zoneData.zone_id !== 'main_floor') return;
 
-    // Doorway stats
-    document.getElementById('door-in').textContent = zoneData.entered_today;
-    document.getElementById('door-out').textContent = zoneData.exited_today;
-    
-    // Net is occupancy (entry/exit based)
-    const net = zoneData.entered_today - zoneData.exited_today;
-    const netEl = document.getElementById('door-net');
-    netEl.textContent = (net >= 0 ? '+' : '') + net;
-    netEl.style.color = net >= 0 ? '#E9EBF0' : '#F0553F'; // Optional styling for negative
+    // Both cameras show the zone level aggregated state
+    const cap = zoneData.capacity_max;
+    const present = zoneData.current_occupancy;
+    const remaining = zoneData.remaining_capacity;
+    const entered = zoneData.entered_today;
+    const exited = zoneData.exited_today;
 
-    // Room stats
-    const sit = zoneData.sitting_count;
-    const stand = zoneData.standing_count;
-    const totalPosture = sit + stand;
-    
-    document.getElementById('room-sit').textContent = sit;
-    document.getElementById('room-stand').textContent = stand;
+    // Update Cam 1 stats
+    document.getElementById('c1-cap').textContent = cap;
+    document.getElementById('c1-present').textContent = present;
+    document.getElementById('c1-remaining').textContent = remaining;
+    document.getElementById('c1-entered').textContent = entered;
+    document.getElementById('c1-exited').textContent = exited;
 
-    const sitPct = totalPosture === 0 ? 0 : Math.round((sit / totalPosture) * 100);
-    const standPct = totalPosture === 0 ? 0 : Math.round((stand / totalPosture) * 100);
-    
-    document.getElementById('bar-sit').style.width = sitPct + '%';
-    document.getElementById('bar-stand').style.width = standPct + '%';
-    
-    document.getElementById('lbl-sit').textContent = 'sit ' + sitPct + '%';
-    document.getElementById('lbl-stand').textContent = 'stand ' + standPct + '%';
+    // Update Cam 2 stats
+    document.getElementById('c2-cap').textContent = cap;
+    document.getElementById('c2-present').textContent = present;
+    document.getElementById('c2-remaining').textContent = remaining;
+    document.getElementById('c2-entered').textContent = entered;
+    document.getElementById('c2-exited').textContent = exited;
 
-    // Global Zone stats (Bottom summary)
-    document.getElementById('total-occupancy').textContent = zoneData.current_occupancy;
-    document.getElementById('capacity-max').textContent = '/' + zoneData.capacity_max;
+    // Update summary bottom bar
+    document.getElementById('s-c1-present').textContent = present;
+    document.getElementById('s-c1-remaining').textContent = remaining;
+    document.getElementById('s-c2-present').textContent = present;
+    document.getElementById('s-c2-remaining').textContent = remaining;
     
-    document.getElementById('total-remaining').textContent = zoneData.remaining_capacity;
-    document.getElementById('total-entered').textContent = zoneData.entered_today;
-    document.getElementById('total-exited').textContent = zoneData.exited_today;
-
-    // Gauge calculation
-    // Circle circumference is approx 201 (2 * PI * r where r=32 -> 2 * 3.14 * 32 = 201.06)
-    const utilPct = zoneData.utilization_pct;
-    const offset = 201 - (201 * Math.min(utilPct, 100) / 100);
-    const ring = document.getElementById('util-ring');
-    ring.style.strokeDashoffset = offset;
-
-    let utilColor = '#3ECF8E'; // Comfortable
-    let utilText = 'Comfortable · ' + utilPct + '%';
-    let utilBg = 'rgba(62,207,142,0.14)';
-    
-    if (utilPct >= 90) {
-        utilColor = '#F0553F'; // At capacity
-        utilText = 'At capacity · ' + utilPct + '%';
-        utilBg = 'rgba(240,85,63,0.14)';
-    } else if (utilPct >= 70) {
-        utilColor = '#F2B84B'; // Busy
-        utilText = 'Busy · ' + utilPct + '%';
-        utilBg = 'rgba(242,184,75,0.14)';
-    }
-
-    ring.style.stroke = utilColor;
-    
-    const badge = document.getElementById('util-badge');
-    badge.textContent = utilText;
-    badge.style.color = utilColor;
-    badge.style.backgroundColor = utilBg;
+    document.getElementById('s-total-occupancy').textContent = 'total ' + present;
+    document.getElementById('s-total-entered').textContent = 'entered ' + entered;
 }
 
 function handleInitialState(data) {
