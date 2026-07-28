@@ -61,14 +61,11 @@ class ConfigLoader:
             "adapter": adapter,
             "source": source,
             "role": role,
+            "frame_skip": 1,
         }
 
         if role in ("entry_exit", "both"):
-            # sensible defaults — line can be recalibrated later
-            new_cam["line"] = {"p1": [100, 400], "p2": [500, 400]}
-            new_cam["direction_in"] = "down"
             new_cam["cooldown_seconds"] = 2.0
-            new_cam["cooldown_px"] = 40
 
         zone["cameras"].append(new_cam)
         self._save()
