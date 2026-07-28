@@ -237,7 +237,7 @@
         </div>
         <div class="video-panel">
           <div class="caption-tag">doorway view</div>
-          <img src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 1 feed">
+          <img id="vid-cam_door_1" data-src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 1 feed">
           <!-- Custom Playback Controls -->
           <div class="playback-controls">
             <button onclick="togglePlay('cam_door_1', this)" class="ctrl-btn" title="Pause">⏸</button>
@@ -277,7 +277,7 @@
         </div>
         <div class="video-panel">
           <div class="caption-tag">interior view</div>
-          <img src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 2 feed">
+          <img id="vid-cam_room_1" data-src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 2 feed">
           <!-- Custom Playback Controls -->
           <div class="playback-controls">
             <button onclick="togglePlay('cam_room_1', this)" class="ctrl-btn" title="Pause">⏸</button>
@@ -340,9 +340,15 @@
       sumCam1.style.display = 'none'; sumCam2.style.display = ''; sumDiv.style.display = 'none';
     } else {
       cam1.style.display = ''; cam2.style.display = '';
-      sumCam1.style.display = ''; sumCam2.style.display = ''; sumDiv.style.display = '';
+      sumCam1.style.display = ''; sumCam2.style.display = ''; sumDiv.style.display = 'flex';
     }
   }
+  
+  // Set video stream sources after page load to prevent infinite loading spinner
+  window.addEventListener('load', () => {
+      document.getElementById('vid-cam_door_1').src = document.getElementById('vid-cam_door_1').dataset.src;
+      document.getElementById('vid-cam_room_1').src = document.getElementById('vid-cam_room_1').dataset.src;
+  });
 </script>
 <script src="/static/app.js"></script>
 </body>
