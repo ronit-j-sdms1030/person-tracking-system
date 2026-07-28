@@ -37,11 +37,11 @@ async def upload_cameras(
 
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
-            # Map upload to UI slot based on role
-            if role == "posture":
-                cam_id = "cam_room_1"
-            elif role == "entry_exit":
+            # Map upload to UI slot based on file index
+            if i == 0:
                 cam_id = "cam_door_1"
+            elif i == 1:
+                cam_id = "cam_room_1"
             else:
                 cam_id = f"cam_upload_{i+1}"
                 
