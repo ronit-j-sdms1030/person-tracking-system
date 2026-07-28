@@ -78,7 +78,9 @@ class VisionRunner:
             self.adapters = {}
         self.adapters[camera_id] = cam_source
         
-        detector = Detector()
+        model_path = cam_config.get("model_path", "yolov8n-head.pt")
+        conf_thresh = cam_config.get("conf_thresh", 0.25)
+        detector = Detector(model_path=model_path, conf_thresh=conf_thresh)
         tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))
 
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
