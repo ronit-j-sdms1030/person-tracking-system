@@ -3,6 +3,7 @@ import time
 import queue
 import threading
 import logging
+import cv2
 from typing import Dict, Any
 
 from core.adapters.base import CameraSource
@@ -54,6 +55,7 @@ class VisionRunner:
         self.cameras_config = self._extract_cameras(self.config)
         self.threads = []
         self.running = False
+        self.latest_frames = {}
 
     def _extract_cameras(self, config: Dict[str, Any]) -> list:
         cameras = []
@@ -128,6 +130,20 @@ class VisionRunner:
                     }
                     self.queue.put(event_dict)
                     logger.info(f"[{camera_id}] EVENT → {event_dict}")
+
+            # Draw basic bounding boxes for dashboard video feed
+            annotated = frame.copy()
+            for d in detections:
+                bbox = d["bbox"]
+                track_id = d.get("track_id", "")
+                if bbox and len(bbox) == 4:
+                    x1, y1, x2, y2 = map(int, bbox)
+                    cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(annotated, str(track_id), (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    
+            _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            self.latest_frames[camera_id] = buffer.tobytes()
 
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")

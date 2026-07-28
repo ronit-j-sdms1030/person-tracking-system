@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from typing import List, Optional
 import os
+import time
 import threading
 from state.event_queue import state_manager
 from state.config_loader import ConfigLoader
@@ -36,8 +37,14 @@ async def upload_cameras(
 
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
-            cam_id = (camera_ids[i] if camera_ids and i < len(camera_ids)
-                      else f"cam_upload_{i+1}")
+            
+            # Map the first two uploads to the hardcoded UI slots
+            default_ids = ["cam_door_1", "cam_room_1"]
+            if camera_ids and i < len(camera_ids) and camera_ids[i]:
+                cam_id = camera_ids[i]
+            else:
+                cam_id = default_ids[i] if i < len(default_ids) else f"cam_upload_{i+1}"
+                
             dest = f"data/sample_videos/{file.filename}"
 
             with open(dest, "wb") as f:
@@ -82,3 +89,16 @@ async def upload_cameras(
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@router.get("/video_feed/{camera_id}")
+def video_feed(camera_id: str):
+    from api.main import vision_runner
+    def gen():
+        while True:
+            if vision_runner and camera_id in vision_runner.latest_frames:
+                frame = vision_runner.latest_frames[camera_id]
+                if frame:
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            time.sleep(0.05)
+    return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
