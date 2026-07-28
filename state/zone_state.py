@@ -17,6 +17,22 @@ class ZoneState:
             for cam in zone_config.get("cameras", [])
         )
         
+        # Initialize per-camera tracking stats
+        self.camera_stats = {}
+        for cam in zone_config.get("cameras", []):
+            cam_id = cam["camera_id"]
+            role = cam.get("role", "entry_exit")
+            self.camera_stats[cam_id] = {
+                "camera_id": cam_id,
+                "role": role
+            }
+            if role in ["entry_exit", "both"]:
+                self.camera_stats[cam_id]["entered_today"] = 0
+                self.camera_stats[cam_id]["exited_today"] = 0
+            if role in ["posture", "both"]:
+                self.camera_stats[cam_id]["sitting"] = 0
+                self.camera_stats[cam_id]["standing"] = 0
+        
         self.track_timeout_seconds = 5.0 # Timeout for stale tracks
 
     def _cleanup_stale_tracks(self, current_time: float):
@@ -32,13 +48,25 @@ class ZoneState:
         self._cleanup_stale_tracks(current_time)
         
         ev_type = event.get("event")
+        cam_id = event.get("camera_id")
+        
         if ev_type == "entered":
             self.entered_today += 1
+            if cam_id in self.camera_stats and "entered_today" in self.camera_stats[cam_id]:
+                self.camera_stats[cam_id]["entered_today"] += 1
         elif ev_type == "exited":
             self.exited_today += 1
+            if cam_id in self.camera_stats and "exited_today" in self.camera_stats[cam_id]:
+                self.camera_stats[cam_id]["exited_today"] += 1
             
         track_id = event.get("track_id")
         posture = event.get("posture")
+        
+        # Track posture changes for the specific camera
+        if posture and cam_id in self.camera_stats and "sitting" in self.camera_stats[cam_id]:
+            # This is a naive increment; in reality you'd track the track_id's state and delta it.
+            # But for simple stats/demo matching Claude's logic, we will just recount below in to_dict 
+            pass
         
         if track_id is not None:
             if ev_type == "exited":
@@ -47,7 +75,8 @@ class ZoneState:
             else:
                 self.active_tracks[track_id] = {
                     "timestamp": current_time,
-                    "posture": posture if posture else "unknown"
+                    "posture": posture if posture else "unknown",
+                    "camera_id": cam_id
                 }
 
     @property
@@ -77,6 +106,23 @@ class ZoneState:
 
     def to_dict(self) -> dict:
         self._cleanup_stale_tracks(time.time())
+        
+        # Reset sitting/standing per camera
+        for cam_id, stats in self.camera_stats.items():
+            if "sitting" in stats:
+                stats["sitting"] = 0
+                stats["standing"] = 0
+                
+        # Tally current posture per camera
+        for track_id, data in self.active_tracks.items():
+            cam_id = data.get("camera_id")
+            posture = data.get("posture")
+            if cam_id in self.camera_stats and "sitting" in self.camera_stats[cam_id]:
+                if posture == "sitting":
+                    self.camera_stats[cam_id]["sitting"] += 1
+                elif posture == "standing":
+                    self.camera_stats[cam_id]["standing"] += 1
+
         return {
             "zone_id": self.zone_id,
             "capacity_max": self.capacity_max,
@@ -86,5 +132,6 @@ class ZoneState:
             "remaining_capacity": self.remaining_capacity,
             "utilization_pct": self.utilization_pct,
             "sitting_count": self.sitting_count,
-            "standing_count": self.standing_count
+            "standing_count": self.standing_count,
+            "cameras": list(self.camera_stats.values())
         }
