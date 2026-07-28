@@ -1,4 +1,21 @@
 import os
+import signal
+
+# Monkeypatch signal.signal to intercept Uvicorn's shutdown handlers
+# This ensures we set vision_runner.running = False immediately on Ctrl+C,
+# breaking the StreamingResponse deadlock where Uvicorn waits forever.
+_original_signal = signal.signal
+def _patched_signal(signum, handler):
+    if signum in (signal.SIGINT, signal.SIGTERM):
+        def _wrapper(*args, **kwargs):
+            global vision_runner
+            if vision_runner:
+                vision_runner.running = False
+            return handler(*args, **kwargs)
+        return _original_signal(signum, _wrapper)
+    return _original_signal(signum, handler)
+signal.signal = _patched_signal
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
