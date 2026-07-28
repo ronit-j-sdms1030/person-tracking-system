@@ -27,11 +27,11 @@
   }
   .wrap{max-width:1180px; margin:0 auto; padding:26px 24px 50px;}
 
-  header{display:flex; align-items:center; gap:8px; margin-bottom:20px; cursor:pointer;}
-  .logo-svg{
+  header{display:flex; align-items:center; gap:6px; margin-bottom:20px;}
+  .logo{
     width:48px; height:48px; flex-shrink:0;
-    transform: translateY(-2px);
   }
+  .logo img{width:100%; height:100%; object-fit:contain;}
   
   .brand-text h1{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:21px; margin:0;}
   .brand-text p{
@@ -161,10 +161,9 @@
 <div class="wrap">
 
   <header>
-    <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 35 15 A 42 42 0 0 0 80 80" fill="none" stroke="#FF5200" stroke-width="12" stroke-linecap="round" />
-      <path d="M 20 70 A 38 38 0 0 0 85 35" fill="none" stroke="#FF9256" stroke-width="12" stroke-linecap="round" opacity="0.9" />
-    </svg>
+    <div class="logo">
+      <img src="/static/stark.svg" alt="Stark Digital Logo">
+    </div>
     <div class="brand-text">
       <h1>Stark Digital</h1>
       <p>Intelligent · Privacy-First · Live Analytics</p>
