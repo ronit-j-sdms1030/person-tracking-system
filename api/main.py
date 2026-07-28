@@ -60,6 +60,12 @@ def login(response: Response, username: str = Form(...), password: str = Form(..
         return response
     return Response(status_code=401)
 
+@app.get("/logout")
+def logout(response: Response):
+    response = RedirectResponse("/login")
+    response.delete_cookie("session")
+    return response
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

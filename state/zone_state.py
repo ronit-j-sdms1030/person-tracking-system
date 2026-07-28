@@ -50,6 +50,18 @@ class ZoneState:
         ev_type = event.get("event")
         cam_id = event.get("camera_id")
         
+        # Dynamically add camera to stats if it was uploaded after startup
+        if cam_id and cam_id not in self.camera_stats:
+            # We don't know the exact role, but we can enable all stats fields just in case
+            self.camera_stats[cam_id] = {
+                "camera_id": cam_id,
+                "role": "both",
+                "entered_today": 0,
+                "exited_today": 0,
+                "sitting": 0,
+                "standing": 0
+            }
+        
         if ev_type == "entered":
             self.entered_today += 1
             if cam_id in self.camera_stats and "entered_today" in self.camera_stats[cam_id]:
