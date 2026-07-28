@@ -1,5 +1,4 @@
-site_id: office_pune_01
 zones:
-- zone_id: main_floor
-  capacity_max: 40
-  cameras: []
+  - zone_id: "main_floor"
+    capacity_max: 40
+    cameras: []

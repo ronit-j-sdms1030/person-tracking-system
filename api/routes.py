@@ -140,7 +140,9 @@ def video_feed(camera_id: str):
     from api.main import vision_runner
     def gen():
         while True:
-            if vision_runner and camera_id in vision_runner.latest_frames:
+            if not vision_runner or not vision_runner.running:
+                break
+            if camera_id in vision_runner.latest_frames:
                 frame = vision_runner.latest_frames[camera_id]
                 if frame:
                     yield (b'--frame\r\n'
