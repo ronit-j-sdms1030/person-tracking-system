@@ -180,7 +180,6 @@ async function uploadCameras() {
   for (let i = 0; i < files.length; i++) {
     formData.append('files', files[i]);
     formData.append('roles', document.getElementById(`role-${i}`).value);
-    formData.append('camera_ids', `cam_upload_${i + 1}`);
   }
 
   try {
