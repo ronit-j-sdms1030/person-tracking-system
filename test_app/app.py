@@ -38,6 +38,7 @@ _event_q      = queue.Queue()
 _stop_event   = threading.Event()
 _stats        = {"entered": 0, "exited": 0, "posture": {"sitting": 0, "standing": 0, "unknown": 0}}
 _event_log    = []          # list of dicts for the log panel
+_last_posture = {}          # dict tracking last known posture per track_id to prevent spam
 _proc_thread  = None
 
 
@@ -81,6 +82,7 @@ def _process_video(video_path: str, role: str, camera_id: str, cooldown: float):
         _stats = {"entered": 0, "exited": 0,
                   "posture": {"sitting": 0, "standing": 0, "unknown": 0}}
         _event_log.clear()
+        _last_posture.clear()
 
     detector = Detector()
     tracker  = Tracker(detector, frame_skip=1)
@@ -156,24 +158,19 @@ def _process_video(video_path: str, role: str, camera_id: str, cooldown: float):
                     _draw_skeleton(annotated, d["keypoints"])
                 with _lock:
                     _stats["posture"][posture] = _stats["posture"].get(posture, 0) + 1
-                entry = {
-                    "time":      time.strftime("%H:%M:%S"),
-                    "track_id":  tid,
-                    "event":     None,
-                    "posture":   posture,
-                    "camera_id": camera_id,
-                }
-                # Limit posture events so log isn't spammed every frame? 
-                # Wait, posture events were emitted every frame in the test site! 
-                # Let's throttle it or just not push posture events to the log constantly.
-                # Actually, in the old logic it pushed every frame. Let's keep it but it might spam.
-                # Just keeping exact same logic as before but changing `elif role == "posture"` to `if p_logic:`
                 
-                # To prevent massive spam in test app for posture:
-                # Let's only emit posture event if it changed for this track.
-                # But for now I'll stick to what was there.
-                _event_log.append(entry)
-                _event_q.put({"type": "event", "data": entry, "stats": dict(_stats)})
+                # Only log/emit an event if the posture CHANGED for this track_id
+                if posture != _last_posture.get(tid):
+                    _last_posture[tid] = posture
+                    entry = {
+                        "time":      time.strftime("%H:%M:%S"),
+                        "track_id":  tid,
+                        "event":     None,
+                        "posture":   posture,
+                        "camera_id": camera_id,
+                    }
+                    _event_log.append(entry)
+                    _event_q.put({"type": "event", "data": entry, "stats": dict(_stats)})
 
         # Progress overlay
         pct = int(frame_n / total * 100) if total else 0
