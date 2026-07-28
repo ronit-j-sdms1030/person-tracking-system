@@ -99,8 +99,7 @@ async def upload_cameras(
 @router.delete("/cameras/{camera_id}")
 def delete_camera(camera_id: str):
     success = config_loader.remove_camera(camera_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Camera not found")
+    # If not found, we just consider it already deleted and continue gracefully.
         
     from api.main import vision_runner
     if vision_runner:
