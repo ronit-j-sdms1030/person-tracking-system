@@ -37,13 +37,13 @@ async def upload_cameras(
 
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
-            
-            # Map the first two uploads to the hardcoded UI slots
-            default_ids = ["cam_door_1", "cam_room_1"]
-            if camera_ids and i < len(camera_ids) and camera_ids[i]:
-                cam_id = camera_ids[i]
+            # Map upload to UI slot based on role
+            if role == "posture":
+                cam_id = "cam_room_1"
+            elif role == "entry_exit":
+                cam_id = "cam_door_1"
             else:
-                cam_id = default_ids[i] if i < len(default_ids) else f"cam_upload_{i+1}"
+                cam_id = f"cam_upload_{i+1}"
                 
             dest = f"data/sample_videos/{file.filename}"
 
@@ -69,7 +69,7 @@ async def upload_cameras(
                     "source": dest,
                     "role": role,
                     "cooldown_seconds": 2.0,
-                    "frame_skip": 1,
+                    "frame_skip": 3,  # Increased from 1 to reduce YOLO load on 60fps video
                 }
                 t = threading.Thread(
                     target=vision_runner._run_camera,

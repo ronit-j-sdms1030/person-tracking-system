@@ -142,7 +142,9 @@ class VisionRunner:
                     cv2.putText(annotated, str(track_id), (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                     
-            _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            # Resize for the web stream to reduce MJPEG latency and bandwidth on 4K/high-res videos
+            annotated_resized = cv2.resize(annotated, (1280, 720))
+            _, buffer = cv2.imencode('.jpg', annotated_resized, [cv2.IMWRITE_JPEG_QUALITY, 70])
             self.latest_frames[camera_id] = buffer.tobytes()
 
         cam_source.release()

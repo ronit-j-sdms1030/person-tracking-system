@@ -185,6 +185,17 @@ async function uploadCameras() {
   try {
       const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
       const result = await res.json();
+      
+      // Auto-switch tabs based on role
+      const firstRole = document.getElementById('role-0').value;
+      if (firstRole === 'posture') {
+          const cam2Btn = document.querySelectorAll('.cam-select button')[1];
+          if (cam2Btn) selectCam('2', cam2Btn);
+      } else {
+          const cam1Btn = document.querySelectorAll('.cam-select button')[0];
+          if (cam1Btn) selectCam('1', cam1Btn);
+      }
+
       alert(`✅ Added ${result.cameras_added.length} camera(s). Processing started — check the dashboard for live updates!`);
   } catch (error) {
       alert(`Error uploading cameras: ${error}`);
