@@ -1,3 +1,4 @@
+site_id: "stark_demo_site"
 zones:
   - zone_id: "main_floor"
     capacity_max: 40
