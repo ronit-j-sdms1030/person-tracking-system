@@ -73,6 +73,11 @@ async def upload_cameras(
                 vision_runner.threads.append(t)
                 t.start()
 
+            # Register camera into the live state_manager so its events update the dashboard
+            default_zone = list(state_manager.zones.keys())[0] if state_manager.zones else None
+            if default_zone and cam_id not in state_manager.camera_to_zone:
+                state_manager.camera_to_zone[cam_id] = default_zone
+
         return {"status": "ok", "cameras_added": added}
 
     except Exception as e:

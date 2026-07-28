@@ -186,7 +186,7 @@ async function uploadCameras() {
   try {
       const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
       const result = await res.json();
-      alert(`Added ${result.cameras_added.length} camera(s). Restart the pipeline to pick them up.`);
+      alert(`✅ Added ${result.cameras_added.length} camera(s). Processing started — check the dashboard for live updates!`);
   } catch (error) {
       alert(`Error uploading cameras: ${error}`);
   }
