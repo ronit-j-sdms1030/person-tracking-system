@@ -7,29 +7,28 @@ from fastapi.responses import FileResponse
 from state.event_queue import state_manager
 from api.routes import router as api_router
 from api.websocket import router as ws_router
-from mock_generator import MockEventGenerator
+from core.main_vision import VisionRunner
 
-# We can start the mock generator if we want to run end-to-end without Person A
-mock_gen = None
+vision_runner = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     state_manager.start()
     
-    # Start mock generator for testing purposes
-    global mock_gen
-    mock_gen = MockEventGenerator(state_manager)
-    mock_gen.start()
-    print("State manager and Mock Event Generator started.")
+    # Start the actual Vision Pipeline!
+    global vision_runner
+    vision_runner = VisionRunner("config/site_config.yaml", state_manager.event_queue)
+    vision_runner.start()
+    print("State manager and Vision Pipeline started.")
     
     yield
     
     # Shutdown
-    if mock_gen:
-        mock_gen.stop()
+    if vision_runner:
+        vision_runner.stop()
     state_manager.stop()
-    print("State manager stopped.")
+    print("State manager and Vision Pipeline stopped.")
 
 
 app = FastAPI(title="People Counting API", lifespan=lifespan)
