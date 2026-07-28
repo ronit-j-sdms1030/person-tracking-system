@@ -78,7 +78,7 @@ class VisionRunner:
             self.adapters = {}
         self.adapters[camera_id] = cam_source
         
-        model_path = cam_config.get("model_path", "yolo11m.pt")
+        model_path = cam_config.get("model_path", "rtdetr-l.pt")
         conf_thresh = cam_config.get("conf_thresh", 0.25)
         detector = Detector(model_path=model_path, conf_thresh=conf_thresh)
         tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))

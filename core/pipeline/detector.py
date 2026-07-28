@@ -1,14 +1,17 @@
 import logging
 from typing import List, Dict, Any
 import numpy as np
-from ultralytics import YOLO
+from ultralytics import YOLO, RTDETR
 
 logger = logging.getLogger(__name__)
 
 class Detector:
-    def __init__(self, model_path: str = "yolo11m.pt", conf_thresh: float = 0.25):
-        logger.info(f"Loading YOLO model from {model_path}")
-        self.model = YOLO(model_path)
+    def __init__(self, model_path: str = "rtdetr-l.pt", conf_thresh: float = 0.25):
+        logger.info(f"Loading Detection model from {model_path}")
+        if "rtdetr" in model_path.lower():
+            self.model = RTDETR(model_path)
+        else:
+            self.model = YOLO(model_path)
         self.conf_thresh = conf_thresh
 
     def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
