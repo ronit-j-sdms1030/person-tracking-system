@@ -1,68 +1,16 @@
 site_id: office_pune_01
-
-# ============================================================
-#  TESTING STAGES — uncomment the stage you want to run
-#  Only ONE stage should be active at a time per camera.
-#
-#  Entry/Exit detection: person appears in frame = "entered"
-#                        person absent for N frames = "exited"
-#  No line drawing needed.
-# ============================================================
-
 zones:
-  - zone_id: main_floor
-    capacity_max: 40
-    cameras:
-
-      # ----------------------------------------------------------
-      # CAMERA 1 — Entry/Exit (doorway)
-      # ----------------------------------------------------------
-
-      # STAGE 1: Local video file
-      - camera_id: cam_door_1
-        adapter: file
-        source: data/sample_videos/doorway_footage.mp4
-        role: entry_exit
-        cooldown_seconds: 2.0   # min seconds before same track can re-fire
-        frame_skip: 1
-
-      # STAGE 2: Recorded / live RTSP feed
-      # - camera_id: cam_door_1
-      #   adapter: rtsp
-      #   source: rtsp://192.168.1.10:554/stream1
-      #   role: entry_exit
-      #   cooldown_seconds: 2.0
-      #   frame_skip: 2
-
-      # STAGE 3: Live USB / webcam
-      # - camera_id: cam_door_1
-      #   adapter: usb
-      #   source: "0"
-      #   role: entry_exit
-      #   cooldown_seconds: 2.0
-      #   frame_skip: 1
-
-      # ----------------------------------------------------------
-      # CAMERA 2 — Posture (interior room)
-      # ----------------------------------------------------------
-
-      # STAGE 1: Local video file
-      - camera_id: cam_room_1
-        adapter: file
-        source: data/sample_videos/interior_footage.mp4
-        role: posture
-        frame_skip: 1
-
-      # STAGE 2: Recorded / live RTSP feed
-      # - camera_id: cam_room_1
-      #   adapter: rtsp
-      #   source: rtsp://192.168.1.11:554/stream1
-      #   role: posture
-      #   frame_skip: 2
-
-      # STAGE 3: Live USB / webcam
-      # - camera_id: cam_room_1
-      #   adapter: usb
-      #   source: "1"
-      #   role: posture
-      #   frame_skip: 1
+- zone_id: main_floor
+  capacity_max: 40
+  cameras:
+  - camera_id: cam_door_1
+    adapter: file
+    source: data/sample_videos/doorway_footage.mp4
+    role: entry_exit
+    cooldown_seconds: 2.0
+    frame_skip: 1
+  - camera_id: cam_room_1
+    adapter: file
+    source: data/sample_videos/interior_footage.mp4
+    role: posture
+    frame_skip: 1

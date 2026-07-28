@@ -52,11 +52,7 @@ async def upload_cameras(
                 f.write(content)
 
             # Add camera to config (saves to site_config.yaml)
-            try:
-                cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role)
-            except ValueError as e:
-                # camera_id already exists — just reuse dest path
-                cam = {"camera_id": cam_id, "source": dest, "role": role}
+            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role)
 
             added.append(cam)
 

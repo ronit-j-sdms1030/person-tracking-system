@@ -51,10 +51,14 @@ class ConfigLoader:
             
         zone = self.raw_data["zones"][0]  # adjust if you support multiple zones
 
-        # prevent duplicate camera_id
-        existing_ids = [c["camera_id"] for c in zone["cameras"]]
-        if camera_id in existing_ids:
-            raise ValueError(f"camera_id '{camera_id}' already exists")
+        # prevent duplicate camera_id by updating instead
+        existing = next((c for c in zone["cameras"] if c["camera_id"] == camera_id), None)
+        if existing:
+            existing["source"] = source
+            existing["role"] = role
+            existing["adapter"] = adapter
+            self._save()
+            return existing
 
         new_cam = {
             "camera_id": camera_id,
