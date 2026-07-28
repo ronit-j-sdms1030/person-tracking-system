@@ -9,3 +9,4 @@ lapx>=0.5.9
 fastapi
 uvicorn
 websockets
+python-multipart
