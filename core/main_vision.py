@@ -81,8 +81,8 @@ class VisionRunner:
         detector = Detector()
         tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))
 
-        entry_exit_logic = EntryExitLogic(cam_config) if role == "entry_exit" else None
-        posture_logic = PostureLogic() if role == "posture" else None
+        entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
+        posture_logic = PostureLogic() if role in ("posture", "both") else None
 
         consecutive_none = 0
         MAX_NONE = 30  # stop after 30 consecutive None frames (file EOF or dead stream)
