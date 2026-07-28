@@ -21,6 +21,11 @@ def get_zone_status(zone_id: str):
         raise HTTPException(status_code=404, detail="Zone not found")
     return status
 
+@router.post("/reset")
+def reset_data():
+    state_manager.reset_zone("main_floor")
+    return {"status": "ok", "message": "Data reset successfully"}
+
 @router.get("/cameras")
 def get_cameras_status():
     return state_manager.get_cameras_status()
@@ -30,6 +35,7 @@ async def upload_cameras(
     files: List[UploadFile],
     roles: List[str] = Form(...),
     slots: Optional[List[str]] = Form(None),
+    capacity: Optional[int] = Form(None),
 ):
     try:
         os.makedirs("data/sample_videos", exist_ok=True)
@@ -57,8 +63,10 @@ async def upload_cameras(
 
             # Add camera to config (saves to site_config.yaml)
             cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role)
-
-            added.append(cam)
+            added.append(cam_id)
+            
+        if capacity is not None:
+            config_loader.update_capacity(capacity)
 
             # Hot-start a new camera thread in the running pipeline
             from api.main import vision_runner

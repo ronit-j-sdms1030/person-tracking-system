@@ -35,6 +35,18 @@ class ZoneState:
         
         self.track_timeout_seconds = 5.0 # Timeout for stale tracks
 
+    def reset(self):
+        self.entered_today = 0
+        self.exited_today = 0
+        self.active_tracks = {}
+        for cam_id, stats in self.camera_stats.items():
+            if "entered_today" in stats:
+                stats["entered_today"] = 0
+                stats["exited_today"] = 0
+            if "sitting" in stats:
+                stats["sitting"] = 0
+                stats["standing"] = 0
+
     def _cleanup_stale_tracks(self, current_time: float):
         stale_ids = [
             tid for tid, data in self.active_tracks.items()

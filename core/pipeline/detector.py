@@ -1,33 +1,37 @@
 import logging
 from typing import List, Dict, Any
 import numpy as np
+import os
 from ultralytics import YOLO, RTDETR
 
 logger = logging.getLogger(__name__)
 
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.25):
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.20):
         self.conf_thresh = conf_thresh
         self.model = None
         self.is_fallback = False
 
-        # Try Primary Model (RT-DETR / Apache 2.0)
+        # Try Primary Model (Custom RT-DETR fine-tuned for head/posture)
         try:
             logger.info(f"Loading Primary Model (RT-DETR): {model_path}")
-            if "rtdetr" in model_path.lower():
-                self.model = RTDETR(model_path)
+            if os.path.exists("rtdetr-custom.pt"):
+                self.model = RTDETR("rtdetr-custom.pt")
+                logger.info("Custom RT-DETR loaded successfully.")
             else:
-                self.model = YOLO(model_path)
-            logger.info("Primary Model loaded successfully.")
-        except Exception as e:
-            logger.warning(f"Failed to load primary model {model_path}: {e}. Activating Fallback Model: {fallback_model_path}")
-            try:
-                self.model = YOLO(fallback_model_path)
+                # Use YOLOv8 head detection model as the placeholder/fallback
+                import urllib.request
+                head_model_path = "yolov8n-head.pt"
+                if not os.path.exists(head_model_path):
+                    logger.info("Downloading YOLOv8 head detection model...")
+                    urllib.request.urlretrieve("https://huggingface.co/keremberke/yolov8n-nlf-head-detection/resolve/main/best.pt", head_model_path)
+                
+                self.model = YOLO(head_model_path)
                 self.is_fallback = True
-                logger.info(f"Fallback Model ({fallback_model_path}) loaded successfully.")
-            except Exception as e2:
-                logger.error(f"Failed to load fallback model {fallback_model_path}: {e2}")
-                raise e2
+                logger.info(f"Fallback Head Model ({head_model_path}) loaded successfully because custom model is not ready.")
+        except Exception as e:
+            logger.error(f"Failed to load any model: {e}")
+            raise e
 
     def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
         results = self.model(frame, classes=[0], conf=self.conf_thresh, verbose=False)

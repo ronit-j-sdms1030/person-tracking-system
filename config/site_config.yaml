@@ -1,17 +1,11 @@
 site_id: stark_demo_site
 zones:
 - zone_id: main_floor
-  capacity_max: 40
+  capacity_max: 25
   cameras:
   - camera_id: cam_door_1
     adapter: file
-    source: data/sample_videos/CCTV_footage_school_bus_students_202607281521.mp4
-    role: both
-    frame_skip: 1
-    cooldown_seconds: 2.0
-  - camera_id: cam_room_1
-    adapter: file
-    source: data/sample_videos/CCTV_footage_school_bus_students_202607281532.mp4
+    source: data/sample_videos/VIDEO-2026-07-28-15-36-24 (1).mp4
     role: both
     frame_skip: 1
     cooldown_seconds: 2.0

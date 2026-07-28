@@ -57,6 +57,14 @@ class StateManager:
             return self.zones[zone_id].to_dict()
         return None
 
+    def update_capacity(self, zone_id: str, capacity: int):
+        if zone_id in self.zones:
+            self.zones[zone_id].capacity_max = capacity
+
+    def reset_zone(self, zone_id: str):
+        if zone_id in self.zones:
+            self.zones[zone_id].reset()
+
     def get_cameras_status(self):
         current_time = time.time()
         cams = []

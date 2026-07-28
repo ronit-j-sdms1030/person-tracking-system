@@ -45,8 +45,8 @@ function renderZone(zoneData) {
                 
                 const elSitting = document.getElementById(`${prefix}-sitting`);
                 const elStanding = document.getElementById(`${prefix}-standing`);
-                if (elSitting) elSitting.textContent = cam.sitting || 0;
-                if (elStanding) elStanding.textContent = cam.standing || 0;
+                if (elSitting) elSitting.textContent = 0; // Frozen until RT-DETR model is trained
+                if (elStanding) elStanding.textContent = 0; // Frozen until RT-DETR model is trained
             }
         });
     }
@@ -191,6 +191,11 @@ async function uploadCameras() {
     formData.append('slots', document.getElementById(`slot-${i}`).value);
   }
 
+  const totalCapEl = document.getElementById('total-cap-input');
+  if (totalCapEl && totalCapEl.value) {
+      formData.append('capacity', parseInt(totalCapEl.value));
+  }
+
   try {
       const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
       const result = await res.json();
@@ -213,6 +218,19 @@ async function deleteCamera(cameraId) {
         }
     } catch (error) {
         alert(`Error: ${error}`);
+    }
+}
+
+async function resetData() {
+    if (!confirm("Are you sure you want to reset all occupancy metrics to 0?")) return;
+    try {
+        const res = await fetch('/reset', { method: 'POST' });
+        if (res.ok) {
+            // Trigger an immediate UI update
+            fetchStatus();
+        }
+    } catch (e) {
+        console.error("Reset failed", e);
     }
 }
 

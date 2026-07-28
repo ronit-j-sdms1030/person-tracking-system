@@ -80,17 +80,26 @@ class VisionRunner:
         
         model_path = cam_config.get("model_path", "rtdetr-l.pt")
         fallback_model = cam_config.get("fallback_model_path", "yolo11m.pt")
-        conf_thresh = cam_config.get("conf_thresh", 0.25)
+        conf_thresh = cam_config.get("conf_thresh", 0.20)
         detector = Detector(model_path=model_path, fallback_model_path=fallback_model, conf_thresh=conf_thresh)
         tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))
 
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
         posture_logic = PostureLogic() if role in ("posture", "both") else None
 
-        consecutive_none = 0
-        MAX_NONE = 30  # stop after 30 consecutive None frames (file EOF or dead stream)
+        fps = 30.0
+        if hasattr(cam_source, 'cap') and cam_source.cap is not None:
+            fps = cam_source.cap.get(cv2.CAP_PROP_FPS)
+        if fps <= 0 or fps > 120:
+            fps = 30.0
+        frame_delay = 1.0 / fps
 
+        consecutive_none = 0
+        MAX_NONE = 30
+        
         while self.running and camera_id not in self.stopped_cameras:
+            loop_start = time.time()
+            
             if camera_id in self.paused_cameras:
                 time.sleep(0.1)
                 continue
@@ -168,6 +177,12 @@ class VisionRunner:
             annotated_resized = cv2.resize(annotated, (960, 540))
             _, buffer = cv2.imencode('.jpg', annotated_resized, [cv2.IMWRITE_JPEG_QUALITY, 55])
             self.latest_frames[camera_id] = buffer.tobytes()
+
+            # Throttle to native FPS to simulate a real-time live camera
+            elapsed = time.time() - loop_start
+            sleep_time = frame_delay - elapsed
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")

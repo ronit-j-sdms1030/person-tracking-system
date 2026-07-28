@@ -95,6 +95,20 @@ class ConfigLoader:
             return True
         return False
 
+    def update_capacity(self, capacity: int):
+        if not self.raw_data:
+            with open(self.config_path, "r") as f:
+                self.raw_data = yaml.safe_load(f)
+        
+        self.raw_data["zones"][0]["capacity_max"] = capacity
+        with open(self.config_path, "w") as f:
+            yaml.safe_dump(self.raw_data, f, sort_keys=False)
+        
+        # We need to tell the state manager about this update so it reflects live
+        from state.event_queue import state_manager
+        state_manager.update_capacity("main_floor", capacity)
+        return True
+
     def _save(self):
         with open(self.config_path, "w") as f:
             yaml.safe_dump(self.raw_data, f, sort_keys=False)
