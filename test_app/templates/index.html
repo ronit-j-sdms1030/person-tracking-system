@@ -368,13 +368,7 @@
     </div>
     <input type="file" id="fileInput" accept="video/*"/>
 
-    <div class="field-group">
-      <label>Camera Role</label>
-      <select id="roleSelect">
-        <option value="entry_exit">Entry / Exit</option>
-        <option value="posture">Posture</option>
-      </select>
-    </div>
+
 
     <div class="field-group">
       <label>Camera ID</label>
@@ -430,7 +424,7 @@
       </div>
 
       <!-- Posture stats -->
-      <div id="postureStats" style="display:none">
+      <div id="postureStats">
         <div class="posture-row">
           <div class="posture-item">
             <div class="emoji">🧍</div>
@@ -488,12 +482,7 @@
   let eventSource   = null;
   let totalEvents   = 0;
 
-  // ── Role toggle ──────────────────────────────────────────────────────────
-  roleSelect.addEventListener('change', () => {
-    const isPosture = roleSelect.value === 'posture';
-    eeStats.style.display     = isPosture ? 'none'  : 'block';
-    postureStats.style.display= isPosture ? 'block' : 'none';
-  });
+
 
   // ── Drag and Drop ────────────────────────────────────────────────────────
   uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
@@ -527,7 +516,7 @@
 
     const fd = new FormData();
     fd.append('video',     selectedFile);
-    fd.append('role',      roleSelect.value);
+    fd.append('role',      'both');
     fd.append('camera_id', document.getElementById('cameraId').value);
     fd.append('cooldown',  document.getElementById('cooldown').value);
 
