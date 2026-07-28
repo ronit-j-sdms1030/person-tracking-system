@@ -187,8 +187,16 @@
     <div class="cam-card" data-cam="1">
       <div class="cam-video-col">
         <div class="cam-head">
-          <div class="cam-title"><b>CAM 1</b><span>doorway</span></div>
-          <div class="cam-live" id="cam1-live"><i></i>Live</div>
+          <div class="header">
+            <h2>CAM 1 <span class="tag">doorway</span></h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button onclick="deleteCamera('cam_door_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
+              <div class="status-indicator" id="c1-status">
+                <div class="dot"></div>
+                <span>Stale</span>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="video-panel">
           <div class="caption-tag">doorway view</div>
@@ -204,8 +212,8 @@
           <div class="chip c1-ee" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c1-entered">0</div><div class="lbl">Entered</div></div>
           <div class="chip wide c1-ee" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Exited</div><div class="num" id="c1-exited">0</div></div>
           
-          <div class="chip c1-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c1-sitting">0</div><div class="lbl">Sitting</div></div>
-          <div class="chip wide c1-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing</div><div class="num" id="c1-standing">0</div></div>
+          <div class="chip c1-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c1-sitting">0</div><div class="lbl">Sitting</div></div>
+          <div class="chip wide c1-posture" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing</div><div class="num" id="c1-standing">0</div></div>
         </div>
       </div>
     </div>
@@ -213,8 +221,16 @@
     <div class="cam-card" data-cam="2" style="display:none;">
       <div class="cam-video-col">
         <div class="cam-head">
-          <div class="cam-title"><b>CAM 2</b><span>interior</span></div>
-          <div class="cam-live" id="cam2-live"><i></i>Live</div>
+          <div class="header">
+            <h2>CAM 2 <span class="tag">interior</span></h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button onclick="deleteCamera('cam_room_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
+              <div class="status-indicator" id="c2-status">
+                <div class="dot"></div>
+                <span>Stale</span>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="video-panel">
           <div class="caption-tag">interior view</div>
@@ -227,8 +243,8 @@
           <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">6</div><div class="lbl">Present</div></div>
           <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">34</div><div class="lbl">Remaining</div></div>
           
-          <div class="chip c2-ee" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c2-entered">0</div><div class="lbl">Entered</div></div>
-          <div class="chip wide c2-ee" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Exited</div><div class="num" id="c2-exited">0</div></div>
+          <div class="chip c2-ee" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c2-entered">0</div><div class="lbl">Entered</div></div>
+          <div class="chip wide c2-ee" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Exited</div><div class="num" id="c2-exited">0</div></div>
 
           <div class="chip c2-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c2-sitting">0</div><div class="lbl">Sitting</div></div>
           <div class="chip wide c2-posture" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing</div><div class="num" id="c2-standing">0</div></div>

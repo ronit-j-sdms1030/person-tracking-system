@@ -56,6 +56,7 @@ class VisionRunner:
         self.threads = []
         self.running = False
         self.latest_frames = {}
+        self.stopped_cameras = set()
 
     def _extract_cameras(self, config: Dict[str, Any]) -> list:
         cameras = []
@@ -80,7 +81,7 @@ class VisionRunner:
         consecutive_none = 0
         MAX_NONE = 30  # stop after 30 consecutive None frames (file EOF or dead stream)
 
-        while self.running:
+        while self.running and camera_id not in self.stopped_cameras:
             frame = cam_source.read_frame()
 
             if frame is None:
@@ -169,6 +170,12 @@ class VisionRunner:
         for t in self.threads:
             t.join(timeout=10)
         logger.info("All threads stopped.")
+        
+    def stop_camera(self, camera_id: str):
+        logger.info(f"Stopping camera {camera_id}...")
+        self.stopped_cameras.add(camera_id)
+        if camera_id in self.latest_frames:
+            del self.latest_frames[camera_id]
 
 
 # ---------------------------------------------------------------------------

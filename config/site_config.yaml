@@ -11,6 +11,6 @@ zones:
     frame_skip: 1
   - camera_id: cam_room_1
     adapter: file
-    source: data/sample_videos/interior_footage.mp4
+    source: data/sample_videos/12660152_3840_2160_60fps.mp4
     role: posture
     frame_skip: 1

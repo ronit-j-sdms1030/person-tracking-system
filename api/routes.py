@@ -83,8 +83,20 @@ async def upload_cameras(
 
         return {"status": "ok", "cameras_added": added}
 
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+@router.delete("/cameras/{camera_id}")
+def delete_camera(camera_id: str):
+    success = config_loader.remove_camera(camera_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Camera not found")
+        
+    from api.main import vision_runner
+    if vision_runner:
+        vision_runner.stop_camera(camera_id)
+        
+    if camera_id in state_manager.camera_to_zone:
+        del state_manager.camera_to_zone[camera_id]
+        
+    return {"status": "ok", "message": f"Deleted {camera_id}"}
 
 @router.get("/video_feed/{camera_id}")
 def video_feed(camera_id: str):

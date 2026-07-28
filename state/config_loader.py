@@ -75,6 +75,15 @@ class ConfigLoader:
         self._save()
         return new_cam
 
+    def remove_camera(self, camera_id: str) -> bool:
+        zone = self.raw_data["zones"][0]
+        original_len = len(zone["cameras"])
+        zone["cameras"] = [c for c in zone["cameras"] if c["camera_id"] != camera_id]
+        if len(zone["cameras"]) < original_len:
+            self._save()
+            return True
+        return False
+
     def _save(self):
         with open(self.config_path, "w") as f:
             yaml.safe_dump(self.raw_data, f, sort_keys=False)

@@ -30,28 +30,16 @@ function renderZone(zoneData) {
                 if (elRemaining) elRemaining.textContent = remaining;
 
                 // Update role-specific stats
-                const eeChips = document.querySelectorAll(`.${prefix}-ee`);
-                const postureChips = document.querySelectorAll(`.${prefix}-posture`);
+                // Update all stats unconditionally per user request
+                const elEntered = document.getElementById(`${prefix}-entered`);
+                const elExited = document.getElementById(`${prefix}-exited`);
+                if (elEntered) elEntered.textContent = cam.entered_today || 0;
+                if (elExited) elExited.textContent = cam.exited_today || 0;
                 
-                if (cam.role === 'entry_exit' || cam.role === 'both') {
-                    eeChips.forEach(el => el.style.display = '');
-                    const elEntered = document.getElementById(`${prefix}-entered`);
-                    const elExited = document.getElementById(`${prefix}-exited`);
-                    if (elEntered) elEntered.textContent = cam.entered_today;
-                    if (elExited) elExited.textContent = cam.exited_today;
-                } else {
-                    eeChips.forEach(el => el.style.display = 'none');
-                }
-                
-                if (cam.role === 'posture' || cam.role === 'both') {
-                    postureChips.forEach(el => el.style.display = '');
-                    const elSitting = document.getElementById(`${prefix}-sitting`);
-                    const elStanding = document.getElementById(`${prefix}-standing`);
-                    if (elSitting) elSitting.textContent = cam.sitting;
-                    if (elStanding) elStanding.textContent = cam.standing;
-                } else {
-                    postureChips.forEach(el => el.style.display = 'none');
-                }
+                const elSitting = document.getElementById(`${prefix}-sitting`);
+                const elStanding = document.getElementById(`${prefix}-standing`);
+                if (elSitting) elSitting.textContent = cam.sitting || 0;
+                if (elStanding) elStanding.textContent = cam.standing || 0;
             }
         });
     }
@@ -195,10 +183,23 @@ async function uploadCameras() {
       const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
       const result = await res.json();
       
-      // Auto-switch tabs based on role
-      // Removed per user request: both cameras now dynamically show appropriate panels
       alert(`✅ Added ${result.cameras_added.length} camera(s). Processing started — check the dashboard for live updates!`);
   } catch (error) {
       alert(`Error uploading cameras: ${error}`);
   }
+}
+
+async function deleteCamera(cameraId) {
+    if (!confirm(`Are you sure you want to delete ${cameraId}?`)) return;
+    try {
+        const res = await fetch(`/cameras/${cameraId}`, { method: 'DELETE' });
+        if (res.ok) {
+            alert('Camera deleted successfully.');
+            window.location.reload();
+        } else {
+            alert('Failed to delete camera.');
+        }
+    } catch (error) {
+        alert(`Error: ${error}`);
+    }
 }

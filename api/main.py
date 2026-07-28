@@ -2,7 +2,8 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi import Request, Form
 
 from state.event_queue import state_manager
 from api.routes import router as api_router
@@ -42,8 +43,22 @@ os.makedirs("dashboard/static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
 
 @app.get("/")
-def serve_dashboard():
+def serve_dashboard(request: Request):
+    if request.cookies.get("session") != "authenticated":
+        return RedirectResponse("/login")
     return FileResponse("dashboard/index.html")
+
+@app.get("/login")
+def serve_login():
+    return FileResponse("dashboard/login.html")
+
+@app.post("/login")
+def login(response: Response, username: str = Form(...), password: str = Form(...)):
+    if username == "admin" and password == "password":
+        response = Response(status_code=200)
+        response.set_cookie(key="session", value="authenticated", httponly=True)
+        return response
+    return Response(status_code=401)
 
 if __name__ == "__main__":
     import uvicorn
