@@ -98,6 +98,27 @@ def delete_camera(camera_id: str):
         
     return {"status": "ok", "message": f"Deleted {camera_id}"}
 
+@router.post("/cameras/{camera_id}/pause")
+def pause_camera(camera_id: str):
+    from api.main import vision_runner
+    if vision_runner:
+        vision_runner.pause_camera(camera_id)
+    return {"status": "ok", "message": f"Paused {camera_id}"}
+
+@router.post("/cameras/{camera_id}/resume")
+def resume_camera(camera_id: str):
+    from api.main import vision_runner
+    if vision_runner:
+        vision_runner.resume_camera(camera_id)
+    return {"status": "ok", "message": f"Resumed {camera_id}"}
+
+@router.post("/cameras/{camera_id}/seek")
+def seek_camera(camera_id: str, percent: float):
+    from api.main import vision_runner
+    if vision_runner:
+        vision_runner.seek_camera(camera_id, percent)
+    return {"status": "ok", "message": f"Seeked {camera_id} to {percent}%"}
+
 @router.get("/video_feed/{camera_id}")
 def video_feed(camera_id: str):
     from api.main import vision_runner

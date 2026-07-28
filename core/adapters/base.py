@@ -18,3 +18,8 @@ class CameraSource(ABC):
     @abstractmethod
     def release(self) -> None:
         pass
+
+    @abstractmethod
+    def set_position(self, percent: float) -> None:
+        """Seek to a percentage of the stream (0.0 to 100.0)"""
+        pass

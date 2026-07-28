@@ -203,3 +203,25 @@ async function deleteCamera(cameraId) {
         alert(`Error: ${error}`);
     }
 }
+
+async function togglePlay(cameraId, btnElement) {
+    const isPlaying = btnElement.innerText === '⏸️';
+    const action = isPlaying ? 'pause' : 'resume';
+    try {
+        const res = await fetch(`/cameras/${cameraId}/${action}`, { method: 'POST' });
+        if (res.ok) {
+            btnElement.innerText = isPlaying ? '▶️' : '⏸️';
+            btnElement.title = isPlaying ? 'Play' : 'Pause';
+        }
+    } catch (e) {
+        console.error("Playback toggle failed", e);
+    }
+}
+
+async function seekVideo(cameraId, percent) {
+    try {
+        await fetch(`/cameras/${cameraId}/seek?percent=${percent}`, { method: 'POST' });
+    } catch (e) {
+        console.error("Seek failed", e);
+    }
+}

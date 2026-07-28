@@ -57,6 +57,7 @@ class VisionRunner:
         self.running = False
         self.latest_frames = {}
         self.stopped_cameras = set()
+        self.paused_cameras = set()
 
     def _extract_cameras(self, config: Dict[str, Any]) -> list:
         cameras = []
@@ -72,6 +73,11 @@ class VisionRunner:
         logger.info(f"[{camera_id}] Starting | role={role}")
 
         cam_source = build_adapter(cam_config)
+        
+        if not hasattr(self, 'adapters'):
+            self.adapters = {}
+        self.adapters[camera_id] = cam_source
+        
         detector = Detector()
         tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))
 
@@ -82,13 +88,18 @@ class VisionRunner:
         MAX_NONE = 30  # stop after 30 consecutive None frames (file EOF or dead stream)
 
         while self.running and camera_id not in self.stopped_cameras:
+            if camera_id in self.paused_cameras:
+                time.sleep(0.1)
+                continue
+                
             frame = cam_source.read_frame()
 
             if frame is None:
                 consecutive_none += 1
                 if consecutive_none >= MAX_NONE:
-                    logger.info(f"[{camera_id}] Stream ended or source exhausted — stopping camera thread.")
-                    break
+                    logger.info(f"[{camera_id}] Stream ended. Looping to beginning.")
+                    cam_source.set_position(0.0)
+                    consecutive_none = 0
                 time.sleep(0.05)
                 continue
             consecutive_none = 0
@@ -176,6 +187,19 @@ class VisionRunner:
         self.stopped_cameras.add(camera_id)
         if camera_id in self.latest_frames:
             del self.latest_frames[camera_id]
+            
+    def pause_camera(self, camera_id: str):
+        self.paused_cameras.add(camera_id)
+
+    def resume_camera(self, camera_id: str):
+        self.paused_cameras.discard(camera_id)
+
+    def seek_camera(self, camera_id: str, percent: float):
+        # We need to find the cam_source adapter to call set_position
+        # However, cam_source is local to _run_camera loop.
+        # Let's save the adapter so we can access it globally.
+        if hasattr(self, 'adapters') and camera_id in self.adapters:
+            self.adapters[camera_id].set_position(percent)
 
 
 # ---------------------------------------------------------------------------

@@ -36,3 +36,11 @@ class FileSource(CameraSource):
         if self.cap:
             self.cap.release()
             self.cap = None
+
+    def set_position(self, percent: float) -> None:
+        if not self.is_open():
+            return
+        total_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        if total_frames > 0:
+            target_frame = int(total_frames * (max(0.0, min(100.0, percent)) / 100.0))
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)

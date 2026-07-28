@@ -155,6 +155,42 @@
     background:var(--panel-2); border:1px solid var(--panel-border);
     padding:4px 10px; border-radius:14px; color:var(--text);
   }
+    
+    .playback-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 12px;
+      box-sizing: border-box;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .video-panel:hover .playback-controls {
+      opacity: 1;
+    }
+    
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      transition: transform 0.1s;
+    }
+    .ctrl-btn:hover {
+      transform: scale(1.2);
+    }
+    .seek-bar {
+      flex: 1;
+      cursor: pointer;
+    }
 </style>
 </head>
 <body>
@@ -201,6 +237,12 @@
         <div class="video-panel">
           <div class="caption-tag">doorway view</div>
           <img src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 1 feed">
+          <!-- Custom Playback Controls -->
+          <div class="playback-controls">
+            <button onclick="togglePlay('cam_door_1', this)" class="ctrl-btn" title="Pause">⏸️</button>
+            <input type="range" class="seek-bar" min="0" max="100" value="0" onchange="seekVideo('cam_door_1', this.value)" title="Scrub Timeline">
+            <button onclick="seekVideo('cam_door_1', 0); if(this.parentElement.children[0].innerText === '▶️') togglePlay('cam_door_1', this.parentElement.children[0]);" class="ctrl-btn" title="Restart">🔄</button>
+          </div>
         </div>
       </div>
       <div class="stats-col">
@@ -235,6 +277,12 @@
         <div class="video-panel">
           <div class="caption-tag">interior view</div>
           <img src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 2 feed">
+          <!-- Custom Playback Controls -->
+          <div class="playback-controls">
+            <button onclick="togglePlay('cam_room_1', this)" class="ctrl-btn" title="Pause">⏸️</button>
+            <input type="range" class="seek-bar" min="0" max="100" value="0" onchange="seekVideo('cam_room_1', this.value)" title="Scrub Timeline">
+            <button onclick="seekVideo('cam_room_1', 0); if(this.parentElement.children[0].innerText === '▶️') togglePlay('cam_room_1', this.parentElement.children[0]);" class="ctrl-btn" title="Restart">🔄</button>
+          </div>
         </div>
       </div>
       <div class="stats-col">
