@@ -1,5 +1,11 @@
+# Vision Pipeline Dependencies
 ultralytics>=8.2.0
 opencv-python>=4.9.0.80
 numpy>=1.26.0
 PyYAML>=6.0.1
 lapx>=0.5.9
+
+# API and Dashboard Dependencies
+fastapi
+uvicorn
+websockets
