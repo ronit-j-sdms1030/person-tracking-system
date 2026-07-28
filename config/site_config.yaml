@@ -2,15 +2,4 @@ site_id: office_pune_01
 zones:
 - zone_id: main_floor
   capacity_max: 40
-  cameras:
-  - camera_id: cam_door_1
-    adapter: file
-    source: data/sample_videos/doorway_footage.mp4
-    role: entry_exit
-    cooldown_seconds: 2.0
-    frame_skip: 1
-  - camera_id: cam_room_1
-    adapter: file
-    source: data/sample_videos/12660152_3840_2160_60fps.mp4
-    role: posture
-    frame_skip: 1
+  cameras: []

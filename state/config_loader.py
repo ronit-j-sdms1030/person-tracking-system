@@ -33,7 +33,7 @@ class ConfigLoader:
                 raise ValueError(f"Zone {zone['zone_id']} missing 'capacity_max'.")
             
             cameras = zone.get("cameras")
-            if not cameras or not isinstance(cameras, list):
+            if cameras is None or not isinstance(cameras, list):
                 raise ValueError(f"Zone {zone['zone_id']} missing or invalid 'cameras'.")
                 
             for cam in cameras:
@@ -47,9 +47,14 @@ class ConfigLoader:
 
     def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file"):
         if not self.raw_data:
-            self.load_and_validate()
+            # Load raw data directly without triggering full validation
+            with open(self.config_path, "r") as f:
+                self.raw_data = yaml.safe_load(f)
+            # Ensure cameras list exists
+            if self.raw_data["zones"][0].get("cameras") is None:
+                self.raw_data["zones"][0]["cameras"] = []
             
-        zone = self.raw_data["zones"][0]  # adjust if you support multiple zones
+        zone = self.raw_data["zones"][0]
 
         # prevent duplicate camera_id by updating instead
         existing = next((c for c in zone["cameras"] if c["camera_id"] == camera_id), None)
