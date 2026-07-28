@@ -6,13 +6,28 @@ from ultralytics import YOLO, RTDETR
 logger = logging.getLogger(__name__)
 
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", conf_thresh: float = 0.25):
-        logger.info(f"Loading Detection model from {model_path}")
-        if "rtdetr" in model_path.lower():
-            self.model = RTDETR(model_path)
-        else:
-            self.model = YOLO(model_path)
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.25):
         self.conf_thresh = conf_thresh
+        self.model = None
+        self.is_fallback = False
+
+        # Try Primary Model (RT-DETR / Apache 2.0)
+        try:
+            logger.info(f"Loading Primary Model (RT-DETR): {model_path}")
+            if "rtdetr" in model_path.lower():
+                self.model = RTDETR(model_path)
+            else:
+                self.model = YOLO(model_path)
+            logger.info("Primary Model loaded successfully.")
+        except Exception as e:
+            logger.warning(f"Failed to load primary model {model_path}: {e}. Activating Fallback Model: {fallback_model_path}")
+            try:
+                self.model = YOLO(fallback_model_path)
+                self.is_fallback = True
+                logger.info(f"Fallback Model ({fallback_model_path}) loaded successfully.")
+            except Exception as e2:
+                logger.error(f"Failed to load fallback model {fallback_model_path}: {e2}")
+                raise e2
 
     def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
         results = self.model(frame, classes=[0], conf=self.conf_thresh, verbose=False)
