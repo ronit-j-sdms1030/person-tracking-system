@@ -93,32 +93,41 @@ class VisionRunner:
             current_time = time.time()
             detections = tracker.process_frame(frame)
 
-            for d in detections:
-                track_id = d.get("track_id")
-                if track_id is None:
-                    continue
+            if role == "entry_exit":
+                # Pass ALL detections for this frame; get back {track_id: event} for
+                # tracks that fired this frame (appeared or confirmed-absent).
+                frame_events = entry_exit_logic.process_frame(detections, current_time)
+                for track_id, event_type in frame_events.items():
+                    # Find the bbox for this track (may be absent on exit — use last known)
+                    match = next((d for d in detections if d.get("track_id") == track_id), None)
+                    bbox = [round(v, 1) for v in match["bbox"]] if match else [0, 0, 0, 0]
+                    event_dict = {
+                        "camera_id": camera_id,
+                        "timestamp": current_time,
+                        "track_id": track_id,
+                        "bbox": bbox,
+                        "event": event_type,
+                        "posture": None,
+                    }
+                    self.queue.put(event_dict)
+                    logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
-                event_type = None
-                posture_state = None
-
-                if role == "entry_exit":
-                    event_type = entry_exit_logic.process(track_id, d["bbox"], current_time)
-                    if event_type is None:
-                        continue  # only emit on actual crossings
-
-                elif role == "posture":
+            elif role == "posture":
+                for d in detections:
+                    track_id = d.get("track_id")
+                    if track_id is None:
+                        continue
                     posture_state = posture_logic.process(d.get("keypoints", []))
-
-                event_dict = {
-                    "camera_id": camera_id,
-                    "timestamp": current_time,
-                    "track_id": track_id,
-                    "bbox": [round(v, 1) for v in d["bbox"]],
-                    "event": event_type,
-                    "posture": posture_state,
-                }
-                self.queue.put(event_dict)
-                logger.info(f"[{camera_id}] EVENT → {event_dict}")
+                    event_dict = {
+                        "camera_id": camera_id,
+                        "timestamp": current_time,
+                        "track_id": track_id,
+                        "bbox": [round(v, 1) for v in d["bbox"]],
+                        "event": None,
+                        "posture": posture_state,
+                    }
+                    self.queue.put(event_dict)
+                    logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")

@@ -3,6 +3,10 @@ site_id: office_pune_01
 # ============================================================
 #  TESTING STAGES — uncomment the stage you want to run
 #  Only ONE stage should be active at a time per camera.
+#
+#  Entry/Exit detection: person appears in frame = "entered"
+#                        person absent for N frames = "exited"
+#  No line drawing needed.
 # ============================================================
 
 zones:
@@ -19,10 +23,7 @@ zones:
         adapter: file
         source: data/sample_videos/doorway_footage.mp4
         role: entry_exit
-        line: {p1: [120, 400], p2: [520, 410]}
-        direction_in: down
-        cooldown_seconds: 2.0
-        cooldown_px: 40
+        cooldown_seconds: 2.0   # min seconds before same track can re-fire
         frame_skip: 1
 
       # STAGE 2: Recorded / live RTSP feed
@@ -30,21 +31,15 @@ zones:
       #   adapter: rtsp
       #   source: rtsp://192.168.1.10:554/stream1
       #   role: entry_exit
-      #   line: {p1: [120, 400], p2: [520, 410]}
-      #   direction_in: down
       #   cooldown_seconds: 2.0
-      #   cooldown_px: 40
-      #   frame_skip: 2   # increase if RTSP is slow
+      #   frame_skip: 2
 
       # STAGE 3: Live USB / webcam
       # - camera_id: cam_door_1
       #   adapter: usb
-      #   source: "0"    # 0 = first webcam, 1 = second, etc.
+      #   source: "0"
       #   role: entry_exit
-      #   line: {p1: [120, 400], p2: [520, 410]}
-      #   direction_in: down
       #   cooldown_seconds: 2.0
-      #   cooldown_px: 40
       #   frame_skip: 1
 
       # ----------------------------------------------------------
@@ -68,6 +63,6 @@ zones:
       # STAGE 3: Live USB / webcam
       # - camera_id: cam_room_1
       #   adapter: usb
-      #   source: "1"    # second webcam
+      #   source: "1"
       #   role: posture
       #   frame_skip: 1
