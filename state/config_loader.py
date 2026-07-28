@@ -6,6 +6,7 @@ class ConfigLoader:
         self.config_path = config_path
         self.site_id = None
         self.zones = []
+        self.raw_data = None
 
     def load_and_validate(self):
         if not os.path.exists(self.config_path):
@@ -41,7 +42,41 @@ class ConfigLoader:
                 if "role" not in cam:
                     raise ValueError(f"Camera {cam['camera_id']} missing 'role'.")
                     
+        self.raw_data = data
         return data
+
+    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file"):
+        if not self.raw_data:
+            self.load_and_validate()
+            
+        zone = self.raw_data["zones"][0]  # adjust if you support multiple zones
+
+        # prevent duplicate camera_id
+        existing_ids = [c["camera_id"] for c in zone["cameras"]]
+        if camera_id in existing_ids:
+            raise ValueError(f"camera_id '{camera_id}' already exists")
+
+        new_cam = {
+            "camera_id": camera_id,
+            "adapter": adapter,
+            "source": source,
+            "role": role,
+        }
+
+        if role in ("entry_exit", "both"):
+            # sensible defaults — line can be recalibrated later
+            new_cam["line"] = {"p1": [100, 400], "p2": [500, 400]}
+            new_cam["direction_in"] = "down"
+            new_cam["cooldown_seconds"] = 2.0
+            new_cam["cooldown_px"] = 40
+
+        zone["cameras"].append(new_cam)
+        self._save()
+        return new_cam
+
+    def _save(self):
+        with open(self.config_path, "w") as f:
+            yaml.safe_dump(self.raw_data, f, sort_keys=False)
 
 def get_config(config_path: str = "config/site_config.yaml"):
     loader = ConfigLoader(config_path)

@@ -149,3 +149,45 @@ setInterval(fetchCameraStatus, 5000);
 fetchCameraStatus();
 
 connectWebSocket();
+
+// --- Multi-file Upload Logic ---
+document.getElementById('video-files').addEventListener('change', (e) => {
+  const container = document.getElementById('role-assign');
+  container.innerHTML = '';
+  [...e.target.files].forEach((file, i) => {
+    container.innerHTML += `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px;">${file.name}</span>
+        <select id="role-${i}" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:4px 8px; border-radius:6px; font-family:'Inter',sans-serif;">
+          <option value="entry_exit">Entry/Exit</option>
+          <option value="posture">Posture</option>
+        </select>
+      </div>`;
+  });
+});
+
+async function uploadCameras() {
+  const fileInput = document.getElementById('video-files');
+  const files = fileInput.files;
+  
+  if (files.length === 0) {
+      alert("Please select at least one video file.");
+      return;
+  }
+  
+  const formData = new FormData();
+
+  for (let i = 0; i < files.length; i++) {
+    formData.append('files', files[i]);
+    formData.append('roles', document.getElementById(`role-${i}`).value);
+    formData.append('camera_ids', `cam_upload_${i + 1}`);
+  }
+
+  try {
+      const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
+      const result = await res.json();
+      alert(`Added ${result.cameras_added.length} camera(s). Restart the pipeline to pick them up.`);
+  } catch (error) {
+      alert(`Error uploading cameras: ${error}`);
+  }
+}

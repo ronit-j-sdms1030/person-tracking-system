@@ -237,6 +237,14 @@
     <div class="pill" id="s-total-entered">entered 175</div>
   </div>
 
+  <!-- Upload Panel for dynamic camera addition -->
+  <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
+    <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
+    <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
+    <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
+    <button onclick="uploadCameras()" style="font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:#fff; background:var(--orange); border:none; padding:8px 18px; border-radius:8px; cursor:pointer;">Upload & Add</button>
+  </div>
+
 </div>
 <script>
   function selectCam(which, btn){

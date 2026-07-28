@@ -17,8 +17,15 @@ class MockEventGenerator:
             
         cam_id = random.choice(list(cams))
         
-        # In our specific test case, cam_door_1 is entry_exit, cam_room_1 is posture
-        is_entry = "door" in cam_id
+        # Dynamically determine role from config
+        role = "unknown"
+        for zone in self.state_mgr.config.get("zones", []):
+            for cam in zone.get("cameras", []):
+                if cam.get("camera_id") == cam_id:
+                    role = cam.get("role", "unknown")
+                    break
+                    
+        is_entry = role in ["entry_exit", "both"]
         
         event_dict = {
             "camera_id": cam_id,
