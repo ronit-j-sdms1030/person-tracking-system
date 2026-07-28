@@ -83,6 +83,9 @@ async def upload_cameras(
 
         return {"status": "ok", "cameras_added": added}
 
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 @router.delete("/cameras/{camera_id}")
 def delete_camera(camera_id: str):
     success = config_loader.remove_camera(camera_id)
