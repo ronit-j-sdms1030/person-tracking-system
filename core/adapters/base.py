@@ -23,3 +23,7 @@ class CameraSource(ABC):
     def set_position(self, percent: float) -> None:
         """Seek to a percentage of the stream (0.0 to 100.0)"""
         pass
+
+    def get_position(self) -> float:
+        """Return current position as percentage (0.0 to 100.0). Default: 0"""
+        return 0.0

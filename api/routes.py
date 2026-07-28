@@ -122,6 +122,13 @@ def seek_camera(camera_id: str, percent: float):
         vision_runner.seek_camera(camera_id, percent)
     return {"status": "ok", "message": f"Seeked {camera_id} to {percent}%"}
 
+@router.get("/cameras/{camera_id}/position")
+def get_position(camera_id: str):
+    from api.main import vision_runner
+    if vision_runner and hasattr(vision_runner, 'adapters') and camera_id in vision_runner.adapters:
+        return {"percent": vision_runner.adapters[camera_id].get_position()}
+    return {"percent": 0.0}
+
 @router.get("/video_feed/{camera_id}")
 def video_feed(camera_id: str):
     from api.main import vision_runner

@@ -1,6 +1,13 @@
 const statusIndicator = document.getElementById('connection-status');
 let ws = null;
 let pollingInterval = null;
+let seekDragging = {}; // track which sliders are being dragged
+
+function toggleMode() {
+    document.documentElement.classList.toggle('light');
+    const isLight = document.documentElement.classList.contains('light');
+    document.getElementById('mode-label').textContent = isLight ? 'Light' : 'Dark';
+}
 
 function renderZone(zoneData) {
     if (zoneData.zone_id !== 'main_floor') return;
@@ -147,18 +154,20 @@ fetchCameraStatus();
 
 connectWebSocket();
 
-// --- Multi-file Upload Logic ---
+// --- Multi-file Upload Logic --- lock role per slot
 document.getElementById('video-files').addEventListener('change', (e) => {
   const container = document.getElementById('role-assign');
   container.innerHTML = '';
+  const roles = ['entry_exit', 'posture'];
+  const roleLabels = ['Entry/Exit (CAM 1)', 'Posture (CAM 2)'];
   [...e.target.files].forEach((file, i) => {
+    const role = roles[i] || 'entry_exit';
+    const label = roleLabels[i] || `Role for file ${i+1}`;
     container.innerHTML += `
       <div style="display:flex; align-items:center; gap:10px;">
         <span style="font-family:'JetBrains Mono',monospace; font-size:12px;">${file.name}</span>
-        <select id="role-${i}" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:4px 8px; border-radius:6px; font-family:'Inter',sans-serif;">
-          <option value="entry_exit">Entry/Exit</option>
-          <option value="posture">Posture</option>
-        </select>
+        <span style="background:var(--chip-amber-bg); color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 10px; border-radius:6px;">${label}</span>
+        <input type="hidden" id="role-${i}" value="${role}">
       </div>`;
   });
 });
@@ -205,17 +214,28 @@ async function deleteCamera(cameraId) {
 }
 
 async function togglePlay(cameraId, btnElement) {
-    const isPlaying = btnElement.innerText === '⏸️';
-    const action = isPlaying ? 'pause' : 'resume';
+    const isPaused = btnElement.innerText.trim() === '▶';
+    const action = isPaused ? 'resume' : 'pause';
     try {
         const res = await fetch(`/cameras/${cameraId}/${action}`, { method: 'POST' });
         if (res.ok) {
-            btnElement.innerText = isPlaying ? '▶️' : '⏸️';
-            btnElement.title = isPlaying ? 'Play' : 'Pause';
+            btnElement.innerText = isPaused ? '⏸' : '▶';
+            btnElement.title = isPaused ? 'Pause' : 'Play';
         }
     } catch (e) {
         console.error("Playback toggle failed", e);
     }
+}
+
+async function restartCamera(cameraId) {
+    // Resume if paused, then seek to 0
+    const btn = document.querySelector(`[onclick="togglePlay('${cameraId}', this)"]`);
+    if (btn && btn.innerText.trim() === '▶') {
+        await togglePlay(cameraId, btn);
+    }
+    await seekVideo(cameraId, 0);
+    const slider = document.getElementById(`seek-${cameraId}`);
+    if (slider) slider.value = 0;
 }
 
 async function seekVideo(cameraId, percent) {
@@ -225,3 +245,31 @@ async function seekVideo(cameraId, percent) {
         console.error("Seek failed", e);
     }
 }
+
+// Auto-sync seek slider with actual video position
+async function syncSeekBars() {
+    for (const camId of ['cam_door_1', 'cam_room_1']) {
+        const slider = document.getElementById(`seek-${camId}`);
+        if (!slider || seekDragging[camId]) continue;
+        try {
+            const res = await fetch(`/cameras/${camId}/position`);
+            if (res.ok) {
+                const data = await res.json();
+                slider.value = data.percent;
+            }
+        } catch (e) {}
+    }
+}
+setInterval(syncSeekBars, 1000);
+
+// Mark slider as dragging while user interacts
+document.querySelectorAll('.seek-bar').forEach(slider => {
+    slider.addEventListener('mousedown', () => {
+        const id = slider.id.replace('seek-', '');
+        seekDragging[id] = true;
+    });
+    slider.addEventListener('mouseup', () => {
+        const id = slider.id.replace('seek-', '');
+        setTimeout(() => { seekDragging[id] = false; }, 500);
+    });
+});
