@@ -131,7 +131,7 @@ class VisionRunner:
                     track_id = d.get("track_id")
                     if track_id is None:
                         continue
-                    posture_state = posture_logic.process(d.get("keypoints", []))
+                    posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"))
                     event_dict = {
                         "camera_id": camera_id,
                         "timestamp": current_time,
