@@ -540,7 +540,7 @@
       const msg = JSON.parse(e.data);
       if (msg.type === 'ping') return;
       if (msg.type === 'event') {
-        addEventItem(msg.data);
+        if (msg.data) addEventItem(msg.data);
         updateStats(msg.stats);
       }
       if (msg.type === 'done') {

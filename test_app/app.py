@@ -143,6 +143,7 @@ def _process_video(video_path: str, role: str, camera_id: str, cooldown: float):
 
         # ── Posture ─────────────────────────────────────────────────────
         if p_logic:
+            frame_posture_counts = {"sitting": 0, "standing": 0, "unknown": 0}
             for d in detections:
                 tid = d.get("track_id")
                 if tid is None:
@@ -156,8 +157,8 @@ def _process_video(video_path: str, role: str, camera_id: str, cooldown: float):
                 _draw_box(annotated, d["bbox"], tid, posture, color)
                 if d.get("keypoints"):
                     _draw_skeleton(annotated, d["keypoints"])
-                with _lock:
-                    _stats["posture"][posture] = _stats["posture"].get(posture, 0) + 1
+                
+                frame_posture_counts[posture] += 1
                 
                 # Only log/emit an event if the posture CHANGED for this track_id
                 if posture != _last_posture.get(tid):
@@ -171,6 +172,16 @@ def _process_video(video_path: str, role: str, camera_id: str, cooldown: float):
                     }
                     _event_log.append(entry)
                     _event_q.put({"type": "event", "data": entry, "stats": dict(_stats)})
+                    
+            with _lock:
+                _stats["posture"] = frame_posture_counts
+                
+            # If we want the UI to update the numbers even when no event fires, 
+            # we can push a "stats_only" update to the SSE stream. But for now,
+            # it updates alongside any events. Actually, let's push a stats update every frame
+            # if we want the numbers to be perfectly live, or just let it update on the next event.
+            # To be safe and keep it live, push a stats update every frame without an event data:
+            _event_q.put({"type": "event", "data": None, "stats": dict(_stats)})
 
         # Progress overlay
         pct = int(frame_n / total * 100) if total else 0
