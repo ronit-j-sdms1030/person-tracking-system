@@ -6,7 +6,7 @@ from ultralytics import YOLO
 logger = logging.getLogger(__name__)
 
 class Detector:
-    def __init__(self, model_path: str = "yolov8n-head.pt", conf_thresh: float = 0.25):
+    def __init__(self, model_path: str = "yolo11m.pt", conf_thresh: float = 0.25):
         logger.info(f"Loading YOLO model from {model_path}")
         self.model = YOLO(model_path)
         self.conf_thresh = conf_thresh
