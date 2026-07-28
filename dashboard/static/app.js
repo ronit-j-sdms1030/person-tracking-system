@@ -158,16 +158,18 @@ connectWebSocket();
 document.getElementById('video-files').addEventListener('change', (e) => {
   const container = document.getElementById('role-assign');
   container.innerHTML = '';
-  const roles = ['both', 'both'];
-  const roleLabels = ['All Features (CAM 1)', 'All Features (CAM 2)'];
   [...e.target.files].forEach((file, i) => {
-    const role = roles[i] || 'entry_exit';
-    const label = roleLabels[i] || `Role for file ${i+1}`;
+    // Default to Camera 1 for first file, Camera 2 for second file
+    const defaultSlot = (i === 0) ? 'cam_door_1' : 'cam_room_1';
     container.innerHTML += `
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-family:'JetBrains Mono',monospace; font-size:12px;">${file.name}</span>
-        <span style="background:var(--chip-amber-bg); color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 10px; border-radius:6px;">${label}</span>
-        <input type="hidden" id="role-${i}" value="${role}">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; min-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
+        <select id="slot-${i}" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:4px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px;">
+          <option value="cam_door_1" ${defaultSlot === 'cam_door_1' ? 'selected' : ''}>Assign to Camera 1</option>
+          <option value="cam_room_1" ${defaultSlot === 'cam_room_1' ? 'selected' : ''}>Assign to Camera 2</option>
+        </select>
+        <span style="background:var(--chip-amber-bg); color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 10px; border-radius:6px;">All Features</span>
+        <input type="hidden" id="role-${i}" value="both">
       </div>`;
   });
 });
@@ -186,6 +188,7 @@ async function uploadCameras() {
   for (let i = 0; i < files.length; i++) {
     formData.append('files', files[i]);
     formData.append('roles', document.getElementById(`role-${i}`).value);
+    formData.append('slots', document.getElementById(`slot-${i}`).value);
   }
 
   try {

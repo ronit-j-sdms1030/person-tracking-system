@@ -29,7 +29,7 @@ def get_cameras_status():
 async def upload_cameras(
     files: List[UploadFile],
     roles: List[str] = Form(...),
-    camera_ids: Optional[List[str]] = Form(None),
+    slots: Optional[List[str]] = Form(None),
 ):
     try:
         os.makedirs("data/sample_videos", exist_ok=True)
@@ -37,13 +37,17 @@ async def upload_cameras(
 
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
-            # Map upload to UI slot based on file index
-            if i == 0:
-                cam_id = "cam_door_1"
-            elif i == 1:
-                cam_id = "cam_room_1"
+            
+            # Use explicit UI slot if provided, else fallback to index
+            if slots and i < len(slots):
+                cam_id = slots[i]
             else:
-                cam_id = f"cam_upload_{i+1}"
+                if i == 0:
+                    cam_id = "cam_door_1"
+                elif i == 1:
+                    cam_id = "cam_room_1"
+                else:
+                    cam_id = f"cam_upload_{i+1}"
                 
             dest = f"data/sample_videos/{file.filename}"
 
