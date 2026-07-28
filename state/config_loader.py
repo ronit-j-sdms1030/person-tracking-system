@@ -81,6 +81,12 @@ class ConfigLoader:
         return new_cam
 
     def remove_camera(self, camera_id: str) -> bool:
+        if not self.raw_data:
+            with open(self.config_path, "r") as f:
+                self.raw_data = yaml.safe_load(f)
+            if self.raw_data["zones"][0].get("cameras") is None:
+                self.raw_data["zones"][0]["cameras"] = []
+                
         zone = self.raw_data["zones"][0]
         original_len = len(zone["cameras"])
         zone["cameras"] = [c for c in zone["cameras"] if c["camera_id"] != camera_id]
