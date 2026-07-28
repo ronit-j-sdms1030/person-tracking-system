@@ -107,30 +107,38 @@ class VisionRunner:
             current_time = time.time()
             detections = tracker.process_frame(frame)
 
-            if role == "entry_exit":
-                # Pass ALL detections for this frame; get back {track_id: event} for
-                # tracks that fired this frame (appeared or confirmed-absent).
+            if role in ["entry_exit", "both"]:
                 frame_events = entry_exit_logic.process_frame(detections, current_time)
                 for track_id, event_type in frame_events.items():
-                    # Find the bbox for this track (may be absent on exit — use last known)
                     match = next((d for d in detections if d.get("track_id") == track_id), None)
                     bbox = [round(v, 1) for v in match["bbox"]] if match else [0, 0, 0, 0]
+                    # Also compute posture if role is both
+                    posture_state = None
+                    if role == "both" and match:
+                        posture_state = posture_logic.process(match.get("keypoints", []), match.get("bbox"))
+                        
                     event_dict = {
                         "camera_id": camera_id,
                         "timestamp": current_time,
                         "track_id": track_id,
                         "bbox": bbox,
                         "event": event_type,
-                        "posture": None,
+                        "posture": posture_state,
                     }
                     self.queue.put(event_dict)
                     logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
-            elif role == "posture":
+            # For posture-only updates, or posture updates in "both" mode when there isn't an entry/exit event
+            if role in ["posture", "both"]:
                 for d in detections:
                     track_id = d.get("track_id")
                     if track_id is None:
                         continue
+                        
+                    # Skip if we already emitted an entry/exit event for this track in this frame (if role == "both")
+                    if role == "both" and track_id in frame_events:
+                        continue
+                        
                     posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"))
                     event_dict = {
                         "camera_id": camera_id,
@@ -141,7 +149,6 @@ class VisionRunner:
                         "posture": posture_state,
                     }
                     self.queue.put(event_dict)
-                    logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
             # Draw basic bounding boxes for dashboard video feed
             annotated = frame.copy()

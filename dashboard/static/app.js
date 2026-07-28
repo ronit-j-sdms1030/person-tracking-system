@@ -158,8 +158,8 @@ connectWebSocket();
 document.getElementById('video-files').addEventListener('change', (e) => {
   const container = document.getElementById('role-assign');
   container.innerHTML = '';
-  const roles = ['entry_exit', 'posture'];
-  const roleLabels = ['Entry/Exit (CAM 1)', 'Posture (CAM 2)'];
+  const roles = ['both', 'both'];
+  const roleLabels = ['All Features (CAM 1)', 'All Features (CAM 2)'];
   [...e.target.files].forEach((file, i) => {
     const role = roles[i] || 'entry_exit';
     const label = roleLabels[i] || `Role for file ${i+1}`;
