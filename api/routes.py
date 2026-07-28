@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Form
+from fastapi import APIRouter, HTTPException, UploadFile, Form, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from typing import List, Optional
 import os
@@ -136,10 +136,13 @@ def get_position(camera_id: str):
     return {"percent": 0.0}
 
 @router.get("/video_feed/{camera_id}")
-def video_feed(camera_id: str):
+async def video_feed(camera_id: str, request: Request):
     from api.main import vision_runner
-    def gen():
+    import asyncio
+    async def gen():
         while True:
+            if await request.is_disconnected():
+                break
             if not vision_runner or not vision_runner.running:
                 break
             if camera_id in vision_runner.latest_frames:
@@ -147,5 +150,5 @@ def video_feed(camera_id: str):
                 if frame:
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            time.sleep(0.05)
+            await asyncio.sleep(0.05)
     return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
