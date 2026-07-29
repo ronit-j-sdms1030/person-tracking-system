@@ -57,8 +57,12 @@ class Detector:
             self.body_model = YOLO(head_model_path)
             self.is_fallback = True
 
-        # 2. Fine-Tuned Head Detector Model: crowdhuman_yolov8n_best.pt (YOLO)
-        if os.path.exists("crowdhuman_yolov8n_best.pt"):
+        # 2. Fine-Tuned Head Detector Model: headmodel.pt (User-Provided Fine-Tuned Head Model)
+        if os.path.exists("headmodel.pt"):
+            logger.info("Loading User Fine-Tuned Head Detector Model: headmodel.pt (YOLO)")
+            self.head_model = YOLO("headmodel.pt")
+            self.use_yolox = False
+        elif os.path.exists("crowdhuman_yolov8n_best.pt"):
             logger.info("Loading Fine-Tuned Head Detector Model: crowdhuman_yolov8n_best.pt (YOLO)")
             self.head_model = YOLO("crowdhuman_yolov8n_best.pt")
             self.use_yolox = False
@@ -131,8 +135,7 @@ class Detector:
 
         if head_detections:
             for hd in head_detections:
-                hx1, hy1, hx2, hy2 = hd["bbox"]
-                hd["head_bbox"] = [hx1, hy1, hx2, hy1 + 0.65 * (hy2 - hy1)]
+                hd["head_bbox"] = hd["bbox"]  # Exact head bounding box from fine-tuned head model
             return head_detections
 
         # Fallback to RT-DETR body model if head_model is missing
