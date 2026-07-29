@@ -128,9 +128,9 @@ class Detector:
                         })
         elif self.head_model:
             if track:
-                head_results = self.head_model.track(frame, conf=0.60, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                head_results = self.head_model.track(frame, conf=0.22, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
             else:
-                head_results = self.head_model(frame, conf=0.60, imgsz=512, verbose=False)
+                head_results = self.head_model(frame, conf=0.22, imgsz=512, verbose=False)
             head_detections = self._parse_results(head_results)
 
         if head_detections:
