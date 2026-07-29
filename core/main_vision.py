@@ -101,6 +101,7 @@ class VisionRunner:
         MAX_NONE = 30
         frame_counter = 0
         last_detections = []
+        track_posture_history = collections.defaultdict(lambda: collections.deque(maxlen=7))
         
         while self.running and camera_id not in self.stopped_cameras:
             loop_start = time.time()
@@ -138,7 +139,9 @@ class VisionRunner:
                     # Also compute posture if role is both
                     posture_state = None
                     if role == "both" and match:
-                        posture_state = posture_logic.process(match.get("keypoints", []), match.get("body_bbox", match.get("bbox")), match.get("class_id"))
+                        raw_p = posture_logic.process(match.get("keypoints", []), match.get("body_bbox", match.get("bbox")), match.get("class_id"))
+                        track_posture_history[track_id].append(raw_p)
+                        posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
                         
                     event_dict = {
                         "camera_id": camera_id,
@@ -162,7 +165,9 @@ class VisionRunner:
                     if role == "both" and track_id in frame_events:
                         continue
                         
-                    posture_state = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
+                    raw_p = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
+                    track_posture_history[track_id].append(raw_p)
+                    posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
                     event_dict = {
                         "camera_id": camera_id,
                         "timestamp": current_time,
@@ -178,7 +183,12 @@ class VisionRunner:
             for d in detections:
                 bbox = d.get("bbox")
                 track_id = d.get("track_id", "")
-                posture_state = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
+                raw_p = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
+                if track_id:
+                    track_posture_history[track_id].append(raw_p)
+                    posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
+                else:
+                    posture_state = raw_p
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
                     if posture_state == "sitting":
