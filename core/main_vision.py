@@ -165,19 +165,14 @@ class VisionRunner:
                     }
                     self.queue.put(event_dict)
 
-            # Draw sleek head circles & posture labels for dashboard video feed
+            # Draw clean bounding box rectangles & posture labels for dashboard video feed
             annotated = frame.copy()
             for d in detections:
-                bbox = d["bbox"]
+                bbox = d.get("bbox")
                 track_id = d.get("track_id", "")
                 posture_state = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
-                    cx = (x1 + x2) // 2
-                    cy = (y1 + y2) // 2
-                    # Prominent head radius (18-28px) and bold 3px stroke for high visibility
-                    r = max(18, min(28, int(max(x2 - x1, y2 - y1) * 0.75)))
-                    
                     if posture_state == "sitting":
                         color = (245, 135, 179) # BGR for Sitting (purple)
                         label = f"#{track_id} Sitting"
@@ -185,11 +180,14 @@ class VisionRunner:
                         color = (63, 85, 240)   # BGR for Standing (red)
                         label = f"#{track_id} Standing"
                     
-                    # Draw bold circle around head with solid tracking dot
-                    cv2.circle(annotated, (cx, cy), r, color, 3)
-                    cv2.circle(annotated, (cx, cy), 4, color, -1)
-                    cv2.putText(annotated, label, (max(5, cx - r), max(15, cy - r - 6)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    # Draw clean rectangular bounding box around person
+                    cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+                    
+                    # Draw text label background pill for crisp contrast
+                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+                    cv2.rectangle(annotated, (x1, max(0, y1 - 18)), (x1 + tw + 6, y1), color, -1)
+                    cv2.putText(annotated, label, (x1 + 3, max(13, y1 - 4)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
                     
             # Resize to 960x540 (lower than 1280x720) and reduce JPEG quality for less lag
             annotated_resized = cv2.resize(annotated, (960, 540))

@@ -86,6 +86,8 @@ class Detector:
                                 best_bbox = b
                     hd["class_id"] = best_cls
                     hd["body_bbox"] = best_bbox
+                    if best_bbox is not None:
+                        hd["bbox"] = best_bbox
             return head_detections
 
         classes = [0] if self.is_fallback else None
