@@ -4,6 +4,7 @@ import queue
 import threading
 import logging
 import cv2
+import collections
 from typing import Dict, Any
 
 from core.adapters.base import CameraSource
