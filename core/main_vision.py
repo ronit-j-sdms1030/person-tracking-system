@@ -91,6 +91,11 @@ class VisionRunner:
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
         posture_logic = PostureLogic() if role in ("posture", "both") else None
 
+        enable_back_row_rule = cam_config.get("enable_back_row_rule", False)
+        back_row_y1_max = float(cam_config.get("back_row_y1_max", 105.0))
+        back_row_y2_max = float(cam_config.get("back_row_y2_max", 260.0))
+        back_row_x1_min = float(cam_config.get("back_row_x1_min", 330.0))
+
         fps = 30.0
         if hasattr(cam_source, 'cap') and cam_source.cap is not None:
             fps = cam_source.cap.get(cv2.CAP_PROP_FPS)
@@ -140,7 +145,16 @@ class VisionRunner:
                     # Also compute posture if role is both
                     posture_state = None
                     if role == "both" and match:
-                        raw_p = posture_logic.process(match.get("keypoints", []), match.get("body_bbox", match.get("bbox")), match.get("class_id"))
+                        raw_p = posture_logic.process(
+                            keypoints=match.get("keypoints", []),
+                            bbox=match.get("body_bbox", match.get("bbox")),
+                            class_id=match.get("class_id"),
+                            track_id=str(track_id),
+                            enable_back_row_rule=enable_back_row_rule,
+                            back_row_y1_max=back_row_y1_max,
+                            back_row_y2_max=back_row_y2_max,
+                            back_row_x1_min=back_row_x1_min
+                        )
                         track_posture_history[track_id].append(raw_p)
                         posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
                         
@@ -166,7 +180,16 @@ class VisionRunner:
                     if role == "both" and track_id in frame_events:
                         continue
                         
-                    raw_p = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
+                    raw_p = posture_logic.process(
+                        keypoints=d.get("keypoints", []),
+                        bbox=d.get("body_bbox", d.get("bbox")),
+                        class_id=d.get("class_id"),
+                        track_id=str(track_id),
+                        enable_back_row_rule=enable_back_row_rule,
+                        back_row_y1_max=back_row_y1_max,
+                        back_row_y2_max=back_row_y2_max,
+                        back_row_x1_min=back_row_x1_min
+                    )
                     track_posture_history[track_id].append(raw_p)
                     posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
                     event_dict = {
@@ -184,7 +207,16 @@ class VisionRunner:
             for d in detections:
                 bbox = d.get("bbox")
                 track_id = d.get("track_id", "")
-                raw_p = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
+                raw_p = posture_logic.process(
+                    keypoints=d.get("keypoints", []),
+                    bbox=d.get("body_bbox", d.get("bbox")),
+                    class_id=d.get("class_id"),
+                    track_id=str(track_id),
+                    enable_back_row_rule=enable_back_row_rule,
+                    back_row_y1_max=back_row_y1_max,
+                    back_row_y2_max=back_row_y2_max,
+                    back_row_x1_min=back_row_x1_min
+                )
                 if track_id:
                     track_posture_history[track_id].append(raw_p)
                     posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
