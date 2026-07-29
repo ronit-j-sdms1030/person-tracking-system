@@ -127,10 +127,11 @@ class Detector:
                             "track_id": i + 1
                         })
         elif self.head_model:
-            if track:
-                head_results = self.head_model.track(frame, conf=0.18, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
-            else:
-                head_results = self.head_model(frame, conf=0.18, imgsz=512, verbose=False)
+            with torch.inference_mode():
+                if track:
+                    head_results = self.head_model.track(frame, conf=0.18, imgsz=384, persist=True, verbose=False, tracker="bytetrack.yaml")
+                else:
+                    head_results = self.head_model(frame, conf=0.18, imgsz=384, verbose=False)
             head_detections = self._parse_results(head_results)
 
         if head_detections:

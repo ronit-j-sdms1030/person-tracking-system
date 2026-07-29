@@ -133,11 +133,8 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            if frame_counter % 3 == 0 or not last_detections:
-                detections = tracker.process_frame(frame)
-                last_detections = detections
-            else:
-                detections = last_detections
+            # Process detections on every frame for 100% smooth, real-time per-frame motion tracking
+            detections = tracker.process_frame(frame)
 
             if role in ["entry_exit", "both"]:
                 frame_events = entry_exit_logic.process_frame(detections, current_time)
