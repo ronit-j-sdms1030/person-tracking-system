@@ -3,7 +3,9 @@ import time
 class ZoneState:
     def __init__(self, zone_config: dict):
         self.zone_id = zone_config['zone_id']
-        self.capacity_max = zone_config['capacity_max']
+        self.capacity_max = zone_config.get('capacity_max', 25)
+        self.capacity_sitting_max = zone_config.get('capacity_sitting_max', 15)
+        self.capacity_standing_max = zone_config.get('capacity_standing_max', 10)
         
         self.entered_today = 0
         self.exited_today = 0
@@ -34,6 +36,16 @@ class ZoneState:
                 self.camera_stats[cam_id]["standing"] = 0
         
         self.track_timeout_seconds = 5.0 # Timeout for stale tracks
+
+    def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
+        if capacity_sitting is not None:
+            self.capacity_sitting_max = capacity_sitting
+        if capacity_standing is not None:
+            self.capacity_standing_max = capacity_standing
+        if capacity is not None:
+            self.capacity_max = capacity
+        elif capacity_sitting is not None or capacity_standing is not None:
+            self.capacity_max = self.capacity_sitting_max + self.capacity_standing_max
 
     def reset(self):
         self.entered_today = 0
@@ -117,6 +129,14 @@ class ZoneState:
         return max(0, self.capacity_max - self.current_occupancy)
 
     @property
+    def remaining_sitting_capacity(self) -> int:
+        return max(0, self.capacity_sitting_max - self.sitting_count)
+
+    @property
+    def remaining_standing_capacity(self) -> int:
+        return max(0, self.capacity_standing_max - self.standing_count)
+
+    @property
     def utilization_pct(self) -> float:
         if self.capacity_max == 0:
             return 0.0
@@ -152,10 +172,14 @@ class ZoneState:
         return {
             "zone_id": self.zone_id,
             "capacity_max": self.capacity_max,
+            "capacity_sitting_max": self.capacity_sitting_max,
+            "capacity_standing_max": self.capacity_standing_max,
             "entered_today": self.entered_today,
             "exited_today": self.exited_today,
             "current_occupancy": self.current_occupancy,
             "remaining_capacity": self.remaining_capacity,
+            "remaining_sitting_capacity": self.remaining_sitting_capacity,
+            "remaining_standing_capacity": self.remaining_standing_capacity,
             "utilization_pct": self.utilization_pct,
             "sitting_count": self.sitting_count,
             "standing_count": self.standing_count,

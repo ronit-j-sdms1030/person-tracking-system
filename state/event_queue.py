@@ -57,9 +57,9 @@ class StateManager:
             return self.zones[zone_id].to_dict()
         return None
 
-    def update_capacity(self, zone_id: str, capacity: int):
+    def update_capacity(self, zone_id: str, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if zone_id in self.zones:
-            self.zones[zone_id].capacity_max = capacity
+            self.zones[zone_id].update_capacity(capacity, capacity_sitting, capacity_standing)
 
     def reset_zone(self, zone_id: str):
         if zone_id in self.zones:

@@ -253,8 +253,8 @@
           <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c1-present">0</div><div class="lbl">Present</div></div>
           <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c1-remaining">0</div><div class="lbl">Remaining</div></div>
           
-          <div class="chip c1-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c1-sitting">0</div><div class="lbl">Sitting</div></div>
-          <div class="chip wide c1-posture" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing</div><div class="num" id="c1-standing">0</div></div>
+          <div class="chip c1-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c1-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c1-sitting-rem">15</span> rem)</div></div>
+          <div class="chip wide c1-posture" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c1-standing-rem">10</span> rem)</div><div class="num"><span id="c1-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-standing-max">10</span></span></div></div>
         </div>
       </div>
     </div>
@@ -290,8 +290,8 @@
           <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">0</div><div class="lbl">Present</div></div>
           <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">0</div><div class="lbl">Remaining</div></div>
 
-          <div class="chip c2-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num" id="c2-sitting">0</div><div class="lbl">Sitting</div></div>
-          <div class="chip wide c2-posture" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing</div><div class="num" id="c2-standing">0</div></div>
+          <div class="chip c2-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c2-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c2-sitting-rem">15</span> rem)</div></div>
+          <div class="chip wide c2-posture" style="--chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c2-standing-rem">10</span> rem)</div><div class="num"><span id="c2-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-standing-max">10</span></span></div></div>
         </div>
       </div>
     </div>
@@ -312,9 +312,19 @@
     <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
     <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
     <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
-    <div style="margin-bottom:15px; display:flex; align-items:center; gap:10px;">
-        <label for="total-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Set Total Capacity: </label>
-        <input type="number" id="total-cap-input" value="40" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:80px; outline:none;">
+    <div style="margin-bottom:15px; display:flex; flex-wrap:wrap; align-items:center; gap:15px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="sitting-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Seating Cap: </label>
+            <input type="number" id="sitting-cap-input" value="15" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="standing-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Standing Cap: </label>
+            <input type="number" id="standing-cap-input" value="10" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="total-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Total Cap: </label>
+            <input type="number" id="total-cap-input" value="25" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
+        </div>
     </div>
     <button onclick="uploadCameras()" style="font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:#fff; background:var(--orange); border:none; padding:8px 18px; border-radius:8px; cursor:pointer;">Upload & Add</button>
   </div>

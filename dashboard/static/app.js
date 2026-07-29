@@ -51,6 +51,23 @@ function renderZone(zoneData) {
         });
     }
 
+    const sittingMax = zoneData.capacity_sitting_max || 15;
+    const standingMax = zoneData.capacity_standing_max || 10;
+    const sittingRem = zoneData.remaining_sitting_capacity !== undefined ? zoneData.remaining_sitting_capacity : Math.max(0, sittingMax - (zoneData.sitting_count || 0));
+    const standingRem = zoneData.remaining_standing_capacity !== undefined ? zoneData.remaining_standing_capacity : Math.max(0, standingMax - (zoneData.standing_count || 0));
+
+    for (const prefix of ['c1', 'c2']) {
+        const elSittingMax = document.getElementById(`${prefix}-sitting-max`);
+        const elSittingRem = document.getElementById(`${prefix}-sitting-rem`);
+        const elStandingMax = document.getElementById(`${prefix}-standing-max`);
+        const elStandingRem = document.getElementById(`${prefix}-standing-rem`);
+        
+        if (elSittingMax) elSittingMax.textContent = sittingMax;
+        if (elSittingRem) elSittingRem.textContent = sittingRem;
+        if (elStandingMax) elStandingMax.textContent = standingMax;
+        if (elStandingRem) elStandingRem.textContent = standingRem;
+    }
+
     // Update summary bottom bar
     document.getElementById('s-c1-present').textContent = present;
     document.getElementById('s-c1-remaining').textContent = remaining;
@@ -192,8 +209,17 @@ async function uploadCameras() {
   }
 
   const totalCapEl = document.getElementById('total-cap-input');
+  const sittingCapEl = document.getElementById('sitting-cap-input');
+  const standingCapEl = document.getElementById('standing-cap-input');
+
   if (totalCapEl && totalCapEl.value) {
       formData.append('capacity', parseInt(totalCapEl.value));
+  }
+  if (sittingCapEl && sittingCapEl.value) {
+      formData.append('capacity_sitting', parseInt(sittingCapEl.value));
+  }
+  if (standingCapEl && standingCapEl.value) {
+      formData.append('capacity_standing', parseInt(standingCapEl.value));
   }
 
   try {

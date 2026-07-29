@@ -36,13 +36,15 @@ async def upload_cameras(
     roles: List[str] = Form(...),
     slots: Optional[List[str]] = Form(None),
     capacity: Optional[int] = Form(None),
+    capacity_sitting: Optional[int] = Form(None),
+    capacity_standing: Optional[int] = Form(None),
 ):
     try:
         os.makedirs("data/sample_videos", exist_ok=True)
         added = []
 
-        if capacity is not None:
-            config_loader.update_capacity(capacity)
+        if capacity is not None or capacity_sitting is not None or capacity_standing is not None:
+            config_loader.update_capacity(capacity=capacity, capacity_sitting=capacity_sitting, capacity_standing=capacity_standing)
 
         from api.main import vision_runner
 

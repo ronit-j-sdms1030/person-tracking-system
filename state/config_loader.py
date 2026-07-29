@@ -95,18 +95,27 @@ class ConfigLoader:
             return True
         return False
 
-    def update_capacity(self, capacity: int):
+    def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if not self.raw_data:
             with open(self.config_path, "r") as f:
                 self.raw_data = yaml.safe_load(f)
         
-        self.raw_data["zones"][0]["capacity_max"] = capacity
+        zone = self.raw_data["zones"][0]
+        if capacity_sitting is not None:
+            zone["capacity_sitting_max"] = capacity_sitting
+        if capacity_standing is not None:
+            zone["capacity_standing_max"] = capacity_standing
+        if capacity is not None:
+            zone["capacity_max"] = capacity
+        elif capacity_sitting is not None or capacity_standing is not None:
+            zone["capacity_max"] = (zone.get("capacity_sitting_max", 15) + zone.get("capacity_standing_max", 10))
+            
         with open(self.config_path, "w") as f:
             yaml.safe_dump(self.raw_data, f, sort_keys=False)
         
         # We need to tell the state manager about this update so it reflects live
         from state.event_queue import state_manager
-        state_manager.update_capacity("main_floor", capacity)
+        state_manager.update_capacity("main_floor", capacity, capacity_sitting, capacity_standing)
         return True
 
     def _save(self):

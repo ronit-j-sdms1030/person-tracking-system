@@ -36,6 +36,8 @@ async def lifespan(app: FastAPI):
 zones:
 - zone_id: main_floor
   capacity_max: 25
+  capacity_sitting_max: 15
+  capacity_standing_max: 10
   cameras: []
 """
     os.makedirs("config", exist_ok=True)
