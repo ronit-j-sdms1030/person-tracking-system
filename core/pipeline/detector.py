@@ -73,6 +73,7 @@ class Detector:
                     hcx, hcy = (hx1 + hx2) / 2, (hy1 + hy2) / 2
                     
                     best_cls = 0
+                    best_bbox = None
                     min_dist = float('inf')
                     for b, c in zip(b_boxes, b_cls):
                         bx1, by1, bx2, by2 = b
@@ -81,7 +82,9 @@ class Detector:
                             if dist < min_dist:
                                 min_dist = dist
                                 best_cls = c
+                                best_bbox = b
                     hd["class_id"] = best_cls
+                    hd["body_bbox"] = best_bbox
             return head_detections
 
         classes = [0] if self.is_fallback else None

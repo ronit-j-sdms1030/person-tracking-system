@@ -130,7 +130,7 @@ class VisionRunner:
                     # Also compute posture if role is both
                     posture_state = None
                     if role == "both" and match:
-                        posture_state = posture_logic.process(match.get("keypoints", []), match.get("bbox"), match.get("class_id"))
+                        posture_state = posture_logic.process(match.get("keypoints", []), match.get("body_bbox", match.get("bbox")), match.get("class_id"))
                         
                     event_dict = {
                         "camera_id": camera_id,
@@ -154,7 +154,7 @@ class VisionRunner:
                     if role == "both" and track_id in frame_events:
                         continue
                         
-                    posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"), d.get("class_id"))
+                    posture_state = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
                     event_dict = {
                         "camera_id": camera_id,
                         "timestamp": current_time,
@@ -170,7 +170,7 @@ class VisionRunner:
             for d in detections:
                 bbox = d["bbox"]
                 track_id = d.get("track_id", "")
-                posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"), d.get("class_id"))
+                posture_state = posture_logic.process(d.get("keypoints", []), d.get("body_bbox", d.get("bbox")), d.get("class_id"))
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
                     cx = (x1 + x2) // 2

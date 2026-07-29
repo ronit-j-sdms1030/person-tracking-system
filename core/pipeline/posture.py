@@ -16,16 +16,16 @@ class PostureLogic:
         return angle
 
     def process(self, keypoints: list = None, bbox: list = None, class_id: int = None) -> str:
-        # 1. Bounding Box Geometry Aspect Ratio Check (Talls < 0.62 = Standing, Wides > 0.85 = Sitting)
+        # 1. Bounding Box Geometry Aspect Ratio Check (Talls < 0.70 = Standing, Wides >= 0.70 = Sitting)
         if bbox is not None and len(bbox) == 4:
             x1, y1, x2, y2 = bbox
             width = x2 - x1
             height = y2 - y1
             if height > 0:
                 aspect_ratio = width / height
-                if aspect_ratio < 0.62:
+                if aspect_ratio < 0.70:
                     return "standing"
-                elif aspect_ratio > 0.85:
+                else:
                     return "sitting"
 
         # 2. Model Predicted Class ID (0: sitting, 1: standing)
