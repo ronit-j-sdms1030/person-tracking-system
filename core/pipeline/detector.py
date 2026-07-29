@@ -77,8 +77,9 @@ class Detector:
                     min_dist = float('inf')
                     for b, c in zip(b_boxes, b_cls):
                         bx1, by1, bx2, by2 = b
-                        if bx1 <= hcx <= bx2 and by1 <= hcy <= by2:
-                            dist = np.sqrt(((bx1 + bx2) / 2 - hcx) ** 2 + ((by1 + by2) / 2 - hcy) ** 2)
+                        if bx1 - 15 <= hcx <= bx2 + 15:
+                            # Top-aligned distance between head top and body box top
+                            dist = np.sqrt(((bx1 + bx2) / 2 - hcx) ** 2 + (by1 - hy1) ** 2)
                             if dist < min_dist:
                                 min_dist = dist
                                 best_cls = c

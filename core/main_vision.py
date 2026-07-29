@@ -175,8 +175,8 @@ class VisionRunner:
                     x1, y1, x2, y2 = map(int, bbox)
                     cx = (x1 + x2) // 2
                     cy = (y1 + y2) // 2
-                    # Small, compact head radius (8-14px) and bold 3px stroke
-                    r = max(8, min(14, int((x2 - x1 + y2 - y1) / 4)))
+                    # Prominent head radius (18-28px) and bold 3px stroke for high visibility
+                    r = max(18, min(28, int(max(x2 - x1, y2 - y1) * 0.75)))
                     
                     if posture_state == "sitting":
                         color = (245, 135, 179) # BGR for Sitting (purple)
@@ -185,11 +185,11 @@ class VisionRunner:
                         color = (63, 85, 240)   # BGR for Standing (red)
                         label = f"#{track_id} Standing"
                     
-                    # Draw small, bold circle around head with center dot
+                    # Draw bold circle around head with solid tracking dot
                     cv2.circle(annotated, (cx, cy), r, color, 3)
-                    cv2.circle(annotated, (cx, cy), 3, color, -1)
-                    cv2.putText(annotated, label, (max(5, cx - 15), max(15, cy - r - 5)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+                    cv2.circle(annotated, (cx, cy), 4, color, -1)
+                    cv2.putText(annotated, label, (max(5, cx - r), max(15, cy - r - 6)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     
             # Resize to 960x540 (lower than 1280x720) and reduce JPEG quality for less lag
             annotated_resized = cv2.resize(annotated, (960, 540))

@@ -9,6 +9,13 @@ function toggleMode() {
     document.getElementById('mode-label').textContent = isLight ? 'Light' : 'Dark';
 }
 
+function syncTotalCap() {
+    const sitVal = parseInt(document.getElementById('sitting-cap-input').value) || 0;
+    const standVal = parseInt(document.getElementById('standing-cap-input').value) || 0;
+    const totalEl = document.getElementById('total-cap-input');
+    if (totalEl) totalEl.value = sitVal + standVal;
+}
+
 function renderZone(zoneData) {
     if (zoneData.zone_id !== 'main_floor') return;
 
