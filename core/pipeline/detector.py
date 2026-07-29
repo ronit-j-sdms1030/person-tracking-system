@@ -57,45 +57,17 @@ class Detector:
             self.body_model = YOLO(head_model_path)
             self.is_fallback = True
 
-        # 2. Primary / Fallback Head Detector (YOLOX Nano Head Model or CrowdHuman YOLO)
-        yolox_path = "yolox_nano_head.pth" if os.path.exists("yolox_nano_head.pth") else ("/home/stark/Downloads/yolox_nano.pth" if os.path.exists("/home/stark/Downloads/yolox_nano.pth") else None)
-        if yolox_path:
-            try:
-                from yolox.exp import get_exp
-                from yolox.data.data_augment import ValTransform
-                from ultralytics.trackers.byte_tracker import BYTETracker
-                from types import SimpleNamespace
-                logger.info(f"Loading User-Requested Head Model: {yolox_path} (YOLOX Nano)")
-                exp = get_exp(None, "yolox_nano")
-                self.yolox_model = exp.get_model()
-                self.yolox_model.eval()
-                ckpt = torch.load(yolox_path, map_location="cpu")
-                self.yolox_model.load_state_dict(ckpt["model"])
-                self.yolox_exp = exp
-                self.val_transform = ValTransform(legacy=False)
-                tracker_args = SimpleNamespace(
-                    track_high_thresh=0.25,
-                    track_low_thresh=0.10,
-                    new_track_thresh=0.20,
-                    track_buffer=30,
-                    match_thresh=0.8,
-                    fuse_score=True
-                )
-                self.yolox_tracker = BYTETracker(tracker_args)
-                self.use_yolox = True
-            except Exception as e:
-                logger.warning(f"Could not load YOLOX model ({e}), falling back to YOLO head detector.")
-                self.use_yolox = False
+        # 2. Fine-Tuned Head Detector Model: crowdhuman_yolov8n_best.pt (YOLO)
+        if os.path.exists("crowdhuman_yolov8n_best.pt"):
+            logger.info("Loading Fine-Tuned Head Detector Model: crowdhuman_yolov8n_best.pt (YOLO)")
+            self.head_model = YOLO("crowdhuman_yolov8n_best.pt")
+            self.use_yolox = False
+        elif os.path.exists("head_yolov8n.pt"):
+            logger.info("Loading Fine-Tuned Head Detector Model: head_yolov8n.pt (YOLO)")
+            self.head_model = YOLO("head_yolov8n.pt")
+            self.use_yolox = False
         else:
             self.use_yolox = False
-
-        if not getattr(self, "use_yolox", False):
-            if os.path.exists("crowdhuman_yolov8n_best.pt"):
-                logger.info("Loading Fallback Head Detector model: crowdhuman_yolov8n_best.pt (YOLO)")
-                self.head_model = YOLO("crowdhuman_yolov8n_best.pt")
-            elif os.path.exists("head_yolov8n.pt"):
-                logger.info("Loading Fallback Head Detector model: head_yolov8n.pt (YOLO)")
-                self.head_model = YOLO("head_yolov8n.pt")
 
         self.model = self.body_model if self.body_model else getattr(self, "head_model", None)
 
