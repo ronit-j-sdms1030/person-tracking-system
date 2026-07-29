@@ -23,6 +23,7 @@ class PostureLogic:
         bbox: list = None,
         class_id: int = None,
         track_id: str = None,
+        frame_shape: tuple = None,
         enable_back_desk_roi: bool = False,
         back_desk_y1_max: float = 110.0,
         back_desk_y2_max: float = 260.0,
@@ -30,45 +31,54 @@ class PostureLogic:
         enable_standing_aisle_roi: bool = False,
         standing_aisle_x1_min: float = 800.0,
     ) -> str:
-        # Calculate aspect ratio of bounding box if available
         ar = None
+        norm_y1, norm_y2, norm_h = 0.0, 0.0, 0.0
+        
+        fh = frame_shape[0] if (frame_shape and len(frame_shape) >= 2 and frame_shape[0] > 0) else 720
+        fw = frame_shape[1] if (frame_shape and len(frame_shape) >= 2 and frame_shape[1] > 0) else 1280
+
         if bbox is not None and len(bbox) == 4:
             x1, y1, x2, y2 = bbox
             width = x2 - x1
             height = y2 - y1
             if height > 0:
                 ar = width / height
+            norm_y1 = y1 / fh
+            norm_y2 = y2 / fh
+            norm_h = height / fh
 
-            # 1. Doorway / Exit Standing Aisle ROI Gate (x1 > 800 or hcx > 800):
+            # 1. Camera-Specific Manual ROI Rules (if explicitly configured for specialized cameras)
             if enable_standing_aisle_roi and (x1 > standing_aisle_x1_min or (x1 + x2)/2 > standing_aisle_x1_min):
-                logger.debug(f"[track_{track_id}] posture=standing | signal=DOORWAY_AISLE_ROI_STANDING | class_id={class_id} | ar={round(ar, 2) if ar else None} | bbox={bbox}")
+                logger.debug(f"[track_{track_id}] posture=standing | signal=DOORWAY_AISLE_ROI_STANDING")
                 return "standing"
 
-            # 2. Spatial ROI Gate for Back-Desk Area (x1 > 330, y1 < 110, y2 < 260):
             if enable_back_desk_roi and (y1 < back_desk_y1_max) and (y2 < back_desk_y2_max) and (x1 > back_desk_x1_min):
-                logger.debug(f"[track_{track_id}] posture=standing | signal=BACK_DESK_SPATIAL_ROI_OCCLUSION_RULE | class_id={class_id} | ar={round(ar, 2) if ar else None} | bbox={bbox}")
+                logger.debug(f"[track_{track_id}] posture=standing | signal=BACK_DESK_SPATIAL_ROI_OCCLUSION_RULE")
                 return "standing"
 
+        # 2. Universal Multi-Signal Posture Evaluator (Works across all environments: Bus, Office, Classroom)
         signal = "DEFAULT_SITTING"
         posture = "sitting"
 
-        # 3. Model Predicted Class ID with Geometry Safety Overrides
-        if class_id is not None:
-            if class_id == 0:
-                if ar is not None and ar < 0.30:
-                    posture = "standing"
-                    signal = "MODEL_SITTING_OVERRIDDEN_BY_EXTREMELY_TALL_AR"
-                else:
-                    posture = "sitting"
-                    signal = "MODEL_CLASS_SITTING"
-            elif class_id == 1:
-                if ar is not None and ar > 0.40:
-                    posture = "sitting"
-                    signal = "MODEL_STANDING_OVERRIDDEN_BY_SEATED_AR"
-                else:
-                    posture = "standing"
-                    signal = "MODEL_CLASS_STANDING"
-        # 4. Pure Geometry Aspect Ratio Fallback
+        # Signal A: Full-Height Standing Body (Person standing upright in room/aisle)
+        if norm_h > 0.42 or (ar is not None and ar < 0.36):
+            posture = "standing"
+            signal = "FULL_HEIGHT_STANDING"
+        # Signal B: Universal Furniture-Occluded Standing Body (Person standing behind desk/table/counter)
+        elif (norm_y1 < 0.25) and (norm_y2 < 0.48) and (norm_h < 0.32) and (ar is not None and ar < 0.65):
+            posture = "standing"
+            signal = "UNIVERSAL_DESK_OCCLUDED_STANDING"
+        # Signal C: Model Class ID with Aspect Ratio Bounds
+        elif class_id == 1 and (ar is None or ar < 0.65):
+            posture = "standing"
+            signal = "MODEL_CLASS_STANDING"
+        elif class_id == 0:
+            if ar is not None and ar < 0.30:
+                posture = "standing"
+                signal = "MODEL_SITTING_OVERRIDDEN_BY_EXTREMELY_TALL_AR"
+            else:
+                posture = "sitting"
+                signal = "MODEL_CLASS_SITTING"
         elif ar is not None:
             if ar < 0.35:
                 posture = "standing"
