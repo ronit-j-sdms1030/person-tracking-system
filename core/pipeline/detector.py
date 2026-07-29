@@ -47,7 +47,7 @@ class Detector:
         return self._detect_or_track(frame, track=True)
 
     def _detect_or_track(self, frame: np.ndarray, track: bool = True) -> List[Dict[str, Any]]:
-        # 1. Primary RT-DETR Detection & Tracking
+        # 1. Run RT-DETR Body & Posture Model
         classes = [0, 1] if not self.is_fallback else [0]
         if track:
             rtdetr_results = self.body_model.track(frame, classes=classes, conf=self.conf_thresh, imgsz=640, persist=True, verbose=False, tracker="bytetrack.yaml")
@@ -55,41 +55,45 @@ class Detector:
             rtdetr_results = self.body_model(frame, classes=classes, conf=self.conf_thresh, imgsz=640, verbose=False)
         rtdetr_detections = self._parse_results(rtdetr_results)
 
-        # If primary RT-DETR returned detections, use RT-DETR for headcount and associate CrowdHuman head boxes if available
-        if rtdetr_detections:
-            if self.head_model:
-                head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=512, verbose=False)
-                head_detections = self._parse_results(head_results)
-                
-                h_boxes = [hd["bbox"] for hd in head_detections]
-                for rd in rtdetr_detections:
-                    bx1, by1, bx2, by2 = rd["bbox"]
-                    bcx = (bx1 + bx2) / 2
-                    
-                    best_h = None
-                    min_dist = float('inf')
-                    for h in h_boxes:
-                        hx1, hy1, hx2, hy2 = h
-                        hcx = (hx1 + hx2) / 2
-                        if bx1 - 15 <= hcx <= bx2 + 15:
-                            dist = np.sqrt((bcx - hcx) ** 2 + (by1 - hy1) ** 2)
-                            if dist < min_dist:
-                                min_dist = dist
-                                best_h = h
-                    if best_h is not None:
-                        rd["head_bbox"] = best_h
+        # 2. Run YOLO CrowdHuman Head Detector in Tandem
+        head_detections = []
+        if self.head_model:
+            head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=512, verbose=False)
+            head_detections = self._parse_results(head_results)
+
+        # 3. Dual-Model Tandem Ensemble Fusion
+        if not head_detections:
             return rtdetr_detections
 
-        # 2. Fallback to YOLO CrowdHuman Head Detector if RT-DETR is empty
-        if self.head_model:
-            logger.debug("Primary RT-DETR empty. Using Fallback YOLO Head Detector.")
-            if track:
-                head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
-            else:
-                head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=512, verbose=False)
-            return self._parse_results(head_results)
+        tandem_detections = list(rtdetr_detections)
+        h_boxes = [hd["bbox"] for hd in head_detections]
+        h_confs = [hd["conf"] for hd in head_detections]
 
-        return []
+        for h, hc in zip(h_boxes, h_confs):
+            hx1, hy1, hx2, hy2 = h
+            hcx = (hx1 + hx2) / 2
+            
+            matched = False
+            for td in tandem_detections:
+                bx1, by1, bx2, by2 = td["bbox"]
+                if bx1 - 20 <= hcx <= bx2 + 20 and by1 - 30 <= hy1 <= by2:
+                    td["head_bbox"] = h
+                    td["conf"] = max(td["conf"], float(hc))
+                    matched = True
+                    break
+            if not matched:
+                # Add unassociated head detection to tandem headcount
+                tandem_detections.append({
+                    "bbox": h,
+                    "head_bbox": h,
+                    "body_bbox": None,
+                    "keypoints": None,
+                    "conf": float(hc),
+                    "class_id": 0,
+                    "track_id": None
+                })
+
+        return tandem_detections
 
     def _parse_results(self, results) -> List[Dict[str, Any]]:
         detections = []
