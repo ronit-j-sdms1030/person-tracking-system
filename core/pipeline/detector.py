@@ -37,7 +37,7 @@ class DetResults:
         return DetResults(self.xyxy[idx], self.conf[idx], self.cls[idx])
 
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.25):
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.50):
         self.conf_thresh = conf_thresh
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.head_model = None
@@ -128,9 +128,9 @@ class Detector:
                         })
         elif self.head_model:
             if track:
-                head_results = self.head_model.track(frame, conf=0.20, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                head_results = self.head_model.track(frame, conf=0.50, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
             else:
-                head_results = self.head_model(frame, conf=0.20, imgsz=512, verbose=False)
+                head_results = self.head_model(frame, conf=0.50, imgsz=512, verbose=False)
             head_detections = self._parse_results(head_results)
 
         if head_detections:
