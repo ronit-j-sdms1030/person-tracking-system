@@ -91,11 +91,11 @@ class VisionRunner:
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
         posture_logic = PostureLogic() if role in ("posture", "both") else None
 
-        enable_back_desk_roi = cam_config.get("enable_back_desk_roi", True)
+        enable_back_desk_roi = cam_config.get("enable_back_desk_roi", False)
         back_desk_y1_max = float(cam_config.get("back_desk_y1_max", 110.0))
         back_desk_y2_max = float(cam_config.get("back_desk_y2_max", 260.0))
         back_desk_x1_min = float(cam_config.get("back_desk_x1_min", 330.0))
-        enable_standing_aisle_roi = cam_config.get("enable_standing_aisle_roi", True)
+        enable_standing_aisle_roi = cam_config.get("enable_standing_aisle_roi", False)
         standing_aisle_x1_min = float(cam_config.get("standing_aisle_x1_min", 800.0))
 
         fps = 30.0

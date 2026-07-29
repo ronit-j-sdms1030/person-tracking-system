@@ -23,11 +23,11 @@ class PostureLogic:
         bbox: list = None,
         class_id: int = None,
         track_id: str = None,
-        enable_back_desk_roi: bool = True,
+        enable_back_desk_roi: bool = False,
         back_desk_y1_max: float = 110.0,
         back_desk_y2_max: float = 260.0,
         back_desk_x1_min: float = 330.0,
-        enable_standing_aisle_roi: bool = True,
+        enable_standing_aisle_roi: bool = False,
         standing_aisle_x1_min: float = 800.0,
     ) -> str:
         # Calculate aspect ratio of bounding box if available
