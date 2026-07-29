@@ -108,10 +108,27 @@ class VisionRunner:
         consecutive_none = 0
         MAX_NONE = 30
         frame_counter = 0
-        last_detections = []
+        latest_async_detections = []
         track_posture_history = collections.defaultdict(lambda: collections.deque(maxlen=7))
-        track_positions = {}
-        track_velocities = {}
+        
+        # Async inference worker thread queue setup
+        inf_queue = queue.Queue(maxsize=1)
+        inf_results_holder = {"detections": []}
+        
+        def _async_worker():
+            while self.running and camera_id not in self.stopped_cameras:
+                try:
+                    f = inf_queue.get(timeout=0.2)
+                    if f is None: break
+                    dets = tracker.process_frame(f)
+                    inf_results_holder["detections"] = dets
+                except queue.Empty:
+                    continue
+                except Exception as e:
+                    logger.warning(f"Async inference error: {e}")
+
+        worker_thread = threading.Thread(target=_async_worker, daemon=True, name=f"inf-{camera_id}")
+        worker_thread.start()
         
         while self.running and camera_id not in self.stopped_cameras:
             loop_start = time.time()
@@ -135,44 +152,20 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            if frame_counter % 3 == 0 or not last_detections:
-                detections = tracker.process_frame(frame)
-                # Calculate motion velocity (vx, vy) for each active track to enable fluid interpolation
-                for d in detections:
-                    tid = d.get("track_id")
-                    bbox = d.get("head_bbox", d.get("bbox"))
-                    if tid and bbox:
-                        cx, cy = (bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0
-                        if tid in track_positions:
-                            px, py = track_positions[tid]
-                            track_velocities[tid] = (cx - px, cy - py)
-                        track_positions[tid] = (cx, cy)
-                last_detections = detections
-            else:
-                # Smoothly glide bounding boxes forward along velocity vector on intermediate frames
-                interpolated = []
-                for d in last_detections:
-                    d_copy = dict(d)
-                    tid = d_copy.get("track_id")
-                    if tid and tid in track_velocities:
-                        vx, vy = track_velocities[tid]
-                        # Apply 1/3 velocity shift per intermediate frame
-                        step_x, step_y = vx / 3.0, vy / 3.0
-                        if "bbox" in d_copy:
-                            b = d_copy["bbox"]
-                            d_copy["bbox"] = [b[0] + step_x, b[1] + step_y, b[2] + step_x, b[3] + step_y]
-                        if "head_bbox" in d_copy:
-                            hb = d_copy["head_bbox"]
-                            d_copy["head_bbox"] = [hb[0] + step_x, hb[1] + step_y, hb[2] + step_x, hb[3] + step_y]
-                    interpolated.append(d_copy)
-                detections = interpolated
+            # Non-blocking submission to async worker thread
+            if inf_queue.empty():
+                try:
+                    inf_queue.put_nowait(frame.copy())
+                except queue.Full:
+                    pass
+
+            detections = inf_results_holder.get("detections", [])
 
             if role in ["entry_exit", "both"]:
                 frame_events = entry_exit_logic.process_frame(detections, current_time)
                 for track_id, event_type in frame_events.items():
                     match = next((d for d in detections if d.get("track_id") == track_id), None)
                     bbox = [round(v, 1) for v in match["bbox"]] if match else [0, 0, 0, 0]
-                    # Also compute posture if role is both
                     posture_state = None
                     if role == "both" and match:
                         raw_p = posture_logic.process(
@@ -202,14 +195,11 @@ class VisionRunner:
                     self.queue.put(event_dict)
                     logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
-            # For posture-only updates, or posture updates in "both" mode when there isn't an entry/exit event
             if role in ["posture", "both"]:
                 for d in detections:
                     track_id = d.get("track_id")
                     if track_id is None:
                         continue
-                        
-                    # Skip if we already emitted an entry/exit event for this track in this frame (if role == "both")
                     if role == "both" and track_id in frame_events:
                         continue
                         
@@ -268,6 +258,7 @@ class VisionRunner:
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
+        inf_queue.put(None)
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")
 
