@@ -16,24 +16,29 @@ class PostureLogic:
         return angle
 
     def process(self, keypoints: list = None, bbox: list = None, class_id: int = None) -> str:
-        # 1. Bounding Box Geometry Aspect Ratio Check (Talls < 0.70 = Standing, Wides >= 0.70 = Sitting)
+        # Calculate aspect ratio of bounding box if available
+        ar = None
         if bbox is not None and len(bbox) == 4:
             x1, y1, x2, y2 = bbox
             width = x2 - x1
             height = y2 - y1
             if height > 0:
-                aspect_ratio = width / height
-                if aspect_ratio < 0.70:
-                    return "standing"
-                else:
-                    return "sitting"
+                ar = width / height
 
-        # 2. Model Predicted Class ID (0: sitting, 1: standing)
+        # 1. Model Predicted Class ID with Geometry Safety Overrides
         if class_id is not None:
             if class_id == 1:
+                if ar is not None and ar > 0.78:
+                    return "sitting"
                 return "standing"
             elif class_id == 0:
+                if ar is not None and ar < 0.52:
+                    return "standing"
                 return "sitting"
+
+        # 2. Pure Geometry Aspect Ratio Fallback (Talls < 0.62 = Standing, Wides >= 0.62 = Sitting)
+        if ar is not None:
+            return "standing" if ar < 0.62 else "sitting"
 
         # 3. Keypoints Pose Fallback
         if keypoints and len(keypoints) >= 17:

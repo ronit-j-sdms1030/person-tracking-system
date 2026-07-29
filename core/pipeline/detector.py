@@ -55,14 +55,14 @@ class Detector:
         head_detections = []
         if self.head_model:
             if track:
-                head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=640, persist=True, verbose=False, tracker="bytetrack.yaml")
+                head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
             else:
-                head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=640, verbose=False)
+                head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=512, verbose=False)
             head_detections = self._parse_results(head_results)
 
         if head_detections:
             if self.body_model:
-                body_results = self.body_model(frame, classes=[0,1], conf=self.conf_thresh, imgsz=640, verbose=False)
+                body_results = self.body_model(frame, classes=[0,1], conf=self.conf_thresh, imgsz=512, verbose=False)
                 body_detections = self._parse_results(body_results)
                 
                 b_boxes = [d["bbox"] for d in body_detections]

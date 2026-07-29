@@ -99,6 +99,8 @@ class VisionRunner:
 
         consecutive_none = 0
         MAX_NONE = 30
+        frame_counter = 0
+        last_detections = []
         
         while self.running and camera_id not in self.stopped_cameras:
             loop_start = time.time()
@@ -119,8 +121,14 @@ class VisionRunner:
                 continue
             consecutive_none = 0
 
+            frame_counter += 1
             current_time = time.time()
-            detections = tracker.process_frame(frame)
+            
+            if frame_counter % 2 == 0 or not last_detections:
+                detections = tracker.process_frame(frame)
+                last_detections = detections
+            else:
+                detections = last_detections
 
             if role in ["entry_exit", "both"]:
                 frame_events = entry_exit_logic.process_frame(detections, current_time)
