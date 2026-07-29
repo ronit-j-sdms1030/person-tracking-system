@@ -37,7 +37,7 @@ class DetResults:
         return DetResults(self.xyxy[idx], self.conf[idx], self.cls[idx])
 
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.20):
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.25):
         self.conf_thresh = conf_thresh
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.head_model = None
