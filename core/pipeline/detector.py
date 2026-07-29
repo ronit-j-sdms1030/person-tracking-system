@@ -9,6 +9,33 @@ import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
+class DetResults:
+    def __init__(self, xyxy, conf, cls):
+        self.xyxy = torch.as_tensor(xyxy, dtype=torch.float32)
+        self.conf = torch.as_tensor(conf, dtype=torch.float32)
+        self.cls = torch.as_tensor(cls, dtype=torch.float32)
+        
+        if self.xyxy.ndim == 1 and len(self.xyxy) > 0:
+            self.xyxy = self.xyxy.unsqueeze(0)
+            self.conf = self.conf.unsqueeze(0)
+            self.cls = self.cls.unsqueeze(0)
+            
+        x1 = self.xyxy[:, 0] if len(self.xyxy) > 0 else torch.empty(0)
+        y1 = self.xyxy[:, 1] if len(self.xyxy) > 0 else torch.empty(0)
+        x2 = self.xyxy[:, 2] if len(self.xyxy) > 0 else torch.empty(0)
+        y2 = self.xyxy[:, 3] if len(self.xyxy) > 0 else torch.empty(0)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        w = x2 - x1
+        h = y2 - y1
+        self.xywh = torch.stack([cx, cy, w, h], dim=-1) if len(self.xyxy) > 0 else torch.empty((0, 4))
+        
+    def __len__(self):
+        return len(self.xyxy)
+        
+    def __getitem__(self, idx):
+        return DetResults(self.xyxy[idx], self.conf[idx], self.cls[idx])
+
 class Detector:
     def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.20):
         self.conf_thresh = conf_thresh
@@ -36,6 +63,8 @@ class Detector:
             try:
                 from yolox.exp import get_exp
                 from yolox.data.data_augment import ValTransform
+                from ultralytics.trackers.byte_tracker import BYTETracker
+                from types import SimpleNamespace
                 logger.info(f"Loading User-Requested Head Model: {yolox_path} (YOLOX Nano)")
                 exp = get_exp(None, "yolox_nano")
                 self.yolox_model = exp.get_model()
@@ -44,6 +73,15 @@ class Detector:
                 self.yolox_model.load_state_dict(ckpt["model"])
                 self.yolox_exp = exp
                 self.val_transform = ValTransform(legacy=False)
+                tracker_args = SimpleNamespace(
+                    track_high_thresh=0.25,
+                    track_low_thresh=0.10,
+                    new_track_thresh=0.20,
+                    track_buffer=30,
+                    match_thresh=0.8,
+                    fuse_score=True
+                )
+                self.yolox_tracker = BYTETracker(tracker_args)
                 self.use_yolox = True
             except Exception as e:
                 logger.warning(f"Could not load YOLOX model ({e}), falling back to YOLO head detector.")
@@ -84,13 +122,34 @@ class Detector:
             if outputs[0] is not None:
                 boxes = outputs[0][:, :4].cpu().numpy() / ratio
                 scores = outputs[0][:, 4].cpu().numpy() * outputs[0][:, 5].cpu().numpy()
-                for i, (b, s) in enumerate(zip(boxes, scores)):
-                    head_detections.append({
-                        "bbox": [float(b[0]), float(b[1]), float(b[2]), float(b[3])],
-                        "confidence": float(s),
-                        "class_id": 0,
-                        "track_id": i + 1
-                    })
+                
+                if track and hasattr(self, "yolox_tracker"):
+                    det_res = DetResults(boxes, scores, np.zeros(len(boxes)))
+                    tracks = self.yolox_tracker.update(det_res, img=frame)
+                    if tracks is not None and len(tracks) > 0:
+                        for t in tracks:
+                            head_detections.append({
+                                "bbox": [float(t[0]), float(t[1]), float(t[2]), float(t[3])],
+                                "confidence": float(t[5]),
+                                "class_id": 0,
+                                "track_id": int(t[4])
+                            })
+                    else:
+                        for i, (b, s) in enumerate(zip(boxes, scores)):
+                            head_detections.append({
+                                "bbox": [float(b[0]), float(b[1]), float(b[2]), float(b[3])],
+                                "confidence": float(s),
+                                "class_id": 0,
+                                "track_id": i + 1
+                            })
+                else:
+                    for i, (b, s) in enumerate(zip(boxes, scores)):
+                        head_detections.append({
+                            "bbox": [float(b[0]), float(b[1]), float(b[2]), float(b[3])],
+                            "confidence": float(s),
+                            "class_id": 0,
+                            "track_id": i + 1
+                        })
         elif self.head_model:
             if track:
                 head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
