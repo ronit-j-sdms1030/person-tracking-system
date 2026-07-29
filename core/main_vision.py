@@ -108,27 +108,8 @@ class VisionRunner:
         consecutive_none = 0
         MAX_NONE = 30
         frame_counter = 0
-        latest_async_detections = []
+        last_detections = []
         track_posture_history = collections.defaultdict(lambda: collections.deque(maxlen=7))
-        
-        # Async inference worker thread queue setup
-        inf_queue = queue.Queue(maxsize=1)
-        inf_results_holder = {"detections": []}
-        
-        def _async_worker():
-            while self.running and camera_id not in self.stopped_cameras:
-                try:
-                    f = inf_queue.get(timeout=0.2)
-                    if f is None: break
-                    dets = tracker.process_frame(f)
-                    inf_results_holder["detections"] = dets
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    logger.warning(f"Async inference error: {e}")
-
-        worker_thread = threading.Thread(target=_async_worker, daemon=True, name=f"inf-{camera_id}")
-        worker_thread.start()
         
         while self.running and camera_id not in self.stopped_cameras:
             loop_start = time.time()
@@ -152,20 +133,18 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            # Non-blocking submission to async worker thread
-            if inf_queue.empty():
-                try:
-                    inf_queue.put_nowait(frame.copy())
-                except queue.Full:
-                    pass
-
-            detections = inf_results_holder.get("detections", [])
+            if frame_counter % 3 == 0 or not last_detections:
+                detections = tracker.process_frame(frame)
+                last_detections = detections
+            else:
+                detections = last_detections
 
             if role in ["entry_exit", "both"]:
                 frame_events = entry_exit_logic.process_frame(detections, current_time)
                 for track_id, event_type in frame_events.items():
                     match = next((d for d in detections if d.get("track_id") == track_id), None)
                     bbox = [round(v, 1) for v in match["bbox"]] if match else [0, 0, 0, 0]
+                    # Also compute posture if role is both
                     posture_state = None
                     if role == "both" and match:
                         raw_p = posture_logic.process(
@@ -195,11 +174,14 @@ class VisionRunner:
                     self.queue.put(event_dict)
                     logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
+            # For posture-only updates, or posture updates in "both" mode when there isn't an entry/exit event
             if role in ["posture", "both"]:
                 for d in detections:
                     track_id = d.get("track_id")
                     if track_id is None:
                         continue
+                        
+                    # Skip if we already emitted an entry/exit event for this track in this frame (if role == "both")
                     if role == "both" and track_id in frame_events:
                         continue
                         
@@ -258,7 +240,6 @@ class VisionRunner:
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
-        inf_queue.put(None)
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")
 
