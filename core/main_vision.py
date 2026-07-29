@@ -235,12 +235,8 @@ class VisionRunner:
                     posture_state = raw_p
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
-                    if posture_state == "sitting":
-                        color = (245, 135, 179) # BGR for Sitting (purple)
-                        label = f"#{track_id} Sitting"
-                    else:
-                        color = (63, 85, 240)   # BGR for Standing (red)
-                        label = f"#{track_id} Standing"
+                    color = (142, 207, 62) # Crisp BGR Green for Headcount Tracking
+                    label = f"#{track_id}"
                     
                     # Draw clean rectangular bounding box around person
                     cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
