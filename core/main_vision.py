@@ -110,6 +110,8 @@ class VisionRunner:
         frame_counter = 0
         last_detections = []
         track_posture_history = collections.defaultdict(lambda: collections.deque(maxlen=7))
+        track_positions = {}
+        track_velocities = {}
         
         while self.running and camera_id not in self.stopped_cameras:
             loop_start = time.time()
@@ -133,8 +135,37 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            # Process detections on every frame for 100% smooth, real-time per-frame motion tracking
-            detections = tracker.process_frame(frame)
+            if frame_counter % 3 == 0 or not last_detections:
+                detections = tracker.process_frame(frame)
+                # Calculate motion velocity (vx, vy) for each active track to enable fluid interpolation
+                for d in detections:
+                    tid = d.get("track_id")
+                    bbox = d.get("head_bbox", d.get("bbox"))
+                    if tid and bbox:
+                        cx, cy = (bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0
+                        if tid in track_positions:
+                            px, py = track_positions[tid]
+                            track_velocities[tid] = (cx - px, cy - py)
+                        track_positions[tid] = (cx, cy)
+                last_detections = detections
+            else:
+                # Smoothly glide bounding boxes forward along velocity vector on intermediate frames
+                interpolated = []
+                for d in last_detections:
+                    d_copy = dict(d)
+                    tid = d_copy.get("track_id")
+                    if tid and tid in track_velocities:
+                        vx, vy = track_velocities[tid]
+                        # Apply 1/3 velocity shift per intermediate frame
+                        step_x, step_y = vx / 3.0, vy / 3.0
+                        if "bbox" in d_copy:
+                            b = d_copy["bbox"]
+                            d_copy["bbox"] = [b[0] + step_x, b[1] + step_y, b[2] + step_x, b[3] + step_y]
+                        if "head_bbox" in d_copy:
+                            hb = d_copy["head_bbox"]
+                            d_copy["head_bbox"] = [hb[0] + step_x, hb[1] + step_y, hb[2] + step_x, hb[3] + step_y]
+                    interpolated.append(d_copy)
+                detections = interpolated
 
             if role in ["entry_exit", "both"]:
                 frame_events = entry_exit_logic.process_frame(detections, current_time)
