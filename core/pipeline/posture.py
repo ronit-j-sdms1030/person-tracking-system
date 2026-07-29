@@ -23,10 +23,10 @@ class PostureLogic:
         bbox: list = None,
         class_id: int = None,
         track_id: str = None,
-        enable_back_row_rule: bool = False,
-        back_row_y1_max: float = 105.0,
-        back_row_y2_max: float = 260.0,
-        back_row_x1_min: float = 330.0,
+        enable_back_desk_roi: bool = True,
+        back_desk_y1_max: float = 110.0,
+        back_desk_y2_max: float = 260.0,
+        back_desk_x1_min: float = 330.0,
     ) -> str:
         # Calculate aspect ratio of bounding box if available
         ar = None
@@ -37,11 +37,10 @@ class PostureLogic:
             if height > 0:
                 ar = width / height
 
-            # Configurable Back-row standing check for desk/table occlusions:
-            if enable_back_row_rule and (y1 < back_row_y1_max) and (y2 < back_row_y2_max) and (x1 > back_row_x1_min):
-                if class_id != 0 or (ar is not None and ar < 0.65):
-                    logger.debug(f"[track_{track_id}] posture=standing | signal=BACK_ROW_OCCLUSION_RULE | class_id={class_id} | ar={round(ar, 2) if ar else None} | bbox={bbox}")
-                    return "standing"
+            # Spatial ROI Gate for Back-Desk Area (x1 > 330, y1 < 110, y2 < 260):
+            if enable_back_desk_roi and (y1 < back_desk_y1_max) and (y2 < back_desk_y2_max) and (x1 > back_desk_x1_min):
+                logger.debug(f"[track_{track_id}] posture=standing | signal=BACK_DESK_SPATIAL_ROI_OCCLUSION_RULE | class_id={class_id} | ar={round(ar, 2) if ar else None} | bbox={bbox}")
+                return "standing"
 
         signal = "DEFAULT_SITTING"
         posture = "sitting"

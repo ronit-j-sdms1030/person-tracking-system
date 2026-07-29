@@ -91,10 +91,10 @@ class VisionRunner:
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
         posture_logic = PostureLogic() if role in ("posture", "both") else None
 
-        enable_back_row_rule = cam_config.get("enable_back_row_rule", False)
-        back_row_y1_max = float(cam_config.get("back_row_y1_max", 105.0))
-        back_row_y2_max = float(cam_config.get("back_row_y2_max", 260.0))
-        back_row_x1_min = float(cam_config.get("back_row_x1_min", 330.0))
+        enable_back_desk_roi = cam_config.get("enable_back_desk_roi", True)
+        back_desk_y1_max = float(cam_config.get("back_desk_y1_max", 110.0))
+        back_desk_y2_max = float(cam_config.get("back_desk_y2_max", 260.0))
+        back_desk_x1_min = float(cam_config.get("back_desk_x1_min", 330.0))
 
         fps = 30.0
         if hasattr(cam_source, 'cap') and cam_source.cap is not None:
@@ -150,10 +150,10 @@ class VisionRunner:
                             bbox=match.get("body_bbox", match.get("bbox")),
                             class_id=match.get("class_id"),
                             track_id=str(track_id),
-                            enable_back_row_rule=enable_back_row_rule,
-                            back_row_y1_max=back_row_y1_max,
-                            back_row_y2_max=back_row_y2_max,
-                            back_row_x1_min=back_row_x1_min
+                            enable_back_desk_roi=enable_back_desk_roi,
+                            back_desk_y1_max=back_desk_y1_max,
+                            back_desk_y2_max=back_desk_y2_max,
+                            back_desk_x1_min=back_desk_x1_min
                         )
                         track_posture_history[track_id].append(raw_p)
                         posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
@@ -185,10 +185,10 @@ class VisionRunner:
                         bbox=d.get("body_bbox", d.get("bbox")),
                         class_id=d.get("class_id"),
                         track_id=str(track_id),
-                        enable_back_row_rule=enable_back_row_rule,
-                        back_row_y1_max=back_row_y1_max,
-                        back_row_y2_max=back_row_y2_max,
-                        back_row_x1_min=back_row_x1_min
+                        enable_back_desk_roi=enable_back_desk_roi,
+                        back_desk_y1_max=back_desk_y1_max,
+                        back_desk_y2_max=back_desk_y2_max,
+                        back_desk_x1_min=back_desk_x1_min
                     )
                     track_posture_history[track_id].append(raw_p)
                     posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
@@ -212,10 +212,10 @@ class VisionRunner:
                     bbox=d.get("body_bbox", d.get("bbox")),
                     class_id=d.get("class_id"),
                     track_id=str(track_id),
-                    enable_back_row_rule=enable_back_row_rule,
-                    back_row_y1_max=back_row_y1_max,
-                    back_row_y2_max=back_row_y2_max,
-                    back_row_x1_min=back_row_x1_min
+                    enable_back_desk_roi=enable_back_desk_roi,
+                    back_desk_y1_max=back_desk_y1_max,
+                    back_desk_y2_max=back_desk_y2_max,
+                    back_desk_x1_min=back_desk_x1_min
                 )
                 if track_id:
                     track_posture_history[track_id].append(raw_p)
