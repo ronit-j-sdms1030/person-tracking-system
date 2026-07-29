@@ -60,8 +60,13 @@ class PostureLogic:
         signal = "DEFAULT_SITTING"
         posture = "sitting"
 
+        # Standalone Head Box Fallback (If no body box was matched and only head box exists):
+        if norm_h < 0.26:
+            logger.debug(f"[track_{track_id}] posture=sitting | signal=STANDALONE_HEAD_BOX_SITTING")
+            return "sitting"
+
         # Signal A: Full-Height Standing Body (Person standing upright in room/aisle)
-        if norm_h > 0.42 or (ar is not None and ar < 0.36):
+        if norm_h > 0.52 or (ar is not None and ar < 0.28):
             posture = "standing"
             signal = "FULL_HEIGHT_STANDING"
         # Signal B: Universal Furniture-Occluded Standing Body (Person standing behind desk/table/counter)

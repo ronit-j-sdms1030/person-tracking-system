@@ -30,15 +30,36 @@ class Detector:
             self.body_model = YOLO(head_model_path)
             self.is_fallback = True
 
-        # 2. Fallback / Auxiliary Head Detector (CrowdHuman YOLO)
-        if os.path.exists("crowdhuman_yolov8n_best.pt"):
-            logger.info("Loading Fallback Head Detector model: crowdhuman_yolov8n_best.pt (YOLO)")
-            self.head_model = YOLO("crowdhuman_yolov8n_best.pt")
-        elif os.path.exists("head_yolov8n.pt"):
-            logger.info("Loading Fallback Head Detector model: head_yolov8n.pt (YOLO)")
-            self.head_model = YOLO("head_yolov8n.pt")
+        # 2. Primary / Fallback Head Detector (YOLOX Nano Head Model or CrowdHuman YOLO)
+        yolox_path = "yolox_nano_head.pth" if os.path.exists("yolox_nano_head.pth") else ("/home/stark/Downloads/yolox_nano.pth" if os.path.exists("/home/stark/Downloads/yolox_nano.pth") else None)
+        if yolox_path:
+            try:
+                from yolox.exp import get_exp
+                from yolox.data.data_augment import ValTransform
+                logger.info(f"Loading User-Requested Head Model: {yolox_path} (YOLOX Nano)")
+                exp = get_exp(None, "yolox_nano")
+                self.yolox_model = exp.get_model()
+                self.yolox_model.eval()
+                ckpt = torch.load(yolox_path, map_location="cpu")
+                self.yolox_model.load_state_dict(ckpt["model"])
+                self.yolox_exp = exp
+                self.val_transform = ValTransform(legacy=False)
+                self.use_yolox = True
+            except Exception as e:
+                logger.warning(f"Could not load YOLOX model ({e}), falling back to YOLO head detector.")
+                self.use_yolox = False
+        else:
+            self.use_yolox = False
 
-        self.model = self.body_model if self.body_model else self.head_model
+        if not getattr(self, "use_yolox", False):
+            if os.path.exists("crowdhuman_yolov8n_best.pt"):
+                logger.info("Loading Fallback Head Detector model: crowdhuman_yolov8n_best.pt (YOLO)")
+                self.head_model = YOLO("crowdhuman_yolov8n_best.pt")
+            elif os.path.exists("head_yolov8n.pt"):
+                logger.info("Loading Fallback Head Detector model: head_yolov8n.pt (YOLO)")
+                self.head_model = YOLO("head_yolov8n.pt")
+
+        self.model = self.body_model if self.body_model else getattr(self, "head_model", None)
 
     def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
         return self._detect_or_track(frame, track=False)
@@ -47,9 +68,30 @@ class Detector:
         return self._detect_or_track(frame, track=True)
 
     def _detect_or_track(self, frame: np.ndarray, track: bool = True) -> List[Dict[str, Any]]:
-        # 1. Primary Head Detector (CrowdHuman / Head Model) for headcount & tracking ground truth
+        # 1. User-Requested Primary Head Detector (YOLOX Nano Head Model)
         head_detections = []
-        if self.head_model:
+        if getattr(self, "use_yolox", False) and getattr(self, "yolox_model", None) is not None:
+            fh, fw, _ = frame.shape
+            img, _ = self.val_transform(frame, None, (416, 416))
+            img_t = torch.from_numpy(img).unsqueeze(0).float().to(self.device)
+            ratio = min(416 / fh, 416 / fw)
+            
+            with torch.no_grad():
+                outputs = self.yolox_model(img_t)
+                from yolox.utils import postprocess
+                outputs = postprocess(outputs, self.yolox_exp.num_classes, self.conf_thresh, 0.45)
+                
+            if outputs[0] is not None:
+                boxes = outputs[0][:, :4].cpu().numpy() / ratio
+                scores = outputs[0][:, 4].cpu().numpy() * outputs[0][:, 5].cpu().numpy()
+                for i, (b, s) in enumerate(zip(boxes, scores)):
+                    head_detections.append({
+                        "bbox": [float(b[0]), float(b[1]), float(b[2]), float(b[3])],
+                        "confidence": float(s),
+                        "class_id": 0,
+                        "track_id": i + 1
+                    })
+        elif self.head_model:
             if track:
                 head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
             else:
@@ -73,7 +115,7 @@ class Detector:
                     min_dist = float('inf')
                     for b, c in zip(b_boxes, b_cls):
                         bx1, by1, bx2, by2 = b
-                        if bx1 - 20 <= hcx <= bx2 + 20:
+                        if bx1 - 25 <= hcx <= bx2 + 25:
                             dist = np.sqrt(((bx1 + bx2) / 2 - hcx) ** 2 + (by1 - hy1) ** 2)
                             if dist < min_dist:
                                 min_dist = dist
