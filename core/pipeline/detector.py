@@ -124,37 +124,15 @@ class Detector:
                         })
         elif self.head_model:
             if track:
-                head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                head_results = self.head_model.track(frame, conf=self.conf_thresh, imgsz=416, persist=True, verbose=False, tracker="bytetrack.yaml")
             else:
-                head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=512, verbose=False)
+                head_results = self.head_model(frame, conf=self.conf_thresh, imgsz=416, verbose=False)
             head_detections = self._parse_results(head_results)
 
         if head_detections:
-            if self.body_model:
-                body_results = self.body_model(frame, classes=[0,1], conf=self.conf_thresh, imgsz=640, verbose=False)
-                body_detections = self._parse_results(body_results)
-                
-                b_boxes = [d["bbox"] for d in body_detections]
-                b_cls = [d.get("class_id", 0) for d in body_detections]
-                
-                for hd in head_detections:
-                    hx1, hy1, hx2, hy2 = hd["bbox"]
-                    hcx, hcy = (hx1 + hx2) / 2, (hy1 + hy2) / 2
-                    
-                    best_cls = 0
-                    best_bbox = None
-                    min_dist = float('inf')
-                    for b, c in zip(b_boxes, b_cls):
-                        bx1, by1, bx2, by2 = b
-                        if bx1 - 25 <= hcx <= bx2 + 25:
-                            dist = np.sqrt(((bx1 + bx2) / 2 - hcx) ** 2 + (by1 - hy1) ** 2)
-                            if dist < min_dist:
-                                min_dist = dist
-                                best_cls = c
-                                best_bbox = b
-                    hd["class_id"] = best_cls
-                    hd["body_bbox"] = best_bbox
-                    hd["head_bbox"] = [hx1, hy1, hx2, hy1 + 0.45 * (hy2 - hy1)]  # Tight head box around head
+            for hd in head_detections:
+                hx1, hy1, hx2, hy2 = hd["bbox"]
+                hd["head_bbox"] = [hx1, hy1, hx2, hy1 + 0.45 * (hy2 - hy1)]
             return head_detections
 
         # Fallback to RT-DETR body model if head_model is missing

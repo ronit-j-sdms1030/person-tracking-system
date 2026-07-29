@@ -133,7 +133,7 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            if frame_counter % 2 == 0 or not last_detections:
+            if frame_counter % 3 == 0 or not last_detections:
                 detections = tracker.process_frame(frame)
                 last_detections = detections
             else:
@@ -229,9 +229,9 @@ class VisionRunner:
                     cv2.putText(annotated, label, (x1 + 3, max(13, y1 - 4)),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
                     
-            # Resize to 960x540 (lower than 1280x720) and reduce JPEG quality for less lag
-            annotated_resized = cv2.resize(annotated, (960, 540))
-            _, buffer = cv2.imencode('.jpg', annotated_resized, [cv2.IMWRITE_JPEG_QUALITY, 55])
+            # Resize to 640x360 for ultra-fast, smooth, zero-lag streaming
+            annotated_resized = cv2.resize(annotated, (640, 360))
+            _, buffer = cv2.imencode('.jpg', annotated_resized, [cv2.IMWRITE_JPEG_QUALITY, 45])
             self.latest_frames[camera_id] = buffer.tobytes()
 
             # Throttle to native FPS to simulate a real-time live camera
