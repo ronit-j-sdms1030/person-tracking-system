@@ -25,6 +25,11 @@ class PostureLogic:
             if height > 0:
                 ar = width / height
 
+            # Back-row standing check for desk/table occlusions:
+            # High head (y1 < 105) & bottom above sofa line (y2 < 260) -> Standing (unless far-left desk chair x1 < 330)
+            if y1 < 105 and y2 < 260 and x1 > 330:
+                return "standing"
+
         # 1. Model Predicted Class ID with Geometry Safety Overrides
         if class_id is not None:
             if class_id == 1:
