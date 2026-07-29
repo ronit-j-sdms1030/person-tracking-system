@@ -165,23 +165,30 @@ class VisionRunner:
                     }
                     self.queue.put(event_dict)
 
-            # Draw basic bounding boxes for dashboard video feed
+            # Draw sleek head circles & posture labels for dashboard video feed
             annotated = frame.copy()
             for d in detections:
                 bbox = d["bbox"]
                 track_id = d.get("track_id", "")
-                cls_id = d.get("class_id", 0)
+                posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"), d.get("class_id"))
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
-                    if cls_id == 0:
+                    cx = (x1 + x2) // 2
+                    cy = (y1 + y2) // 2
+                    r = max(12, int(max(x2 - x1, y2 - y1) / 2))
+                    
+                    if posture_state == "sitting":
                         color = (245, 135, 179) # BGR for Sitting (purple)
                         label = f"#{track_id} Sitting"
                     else:
                         color = (63, 85, 240)   # BGR for Standing (red)
                         label = f"#{track_id} Standing"
-                    cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(annotated, label, (x1, max(15, y1 - 8)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
+                    
+                    # Draw circle around head with center dot
+                    cv2.circle(annotated, (cx, cy), r, color, 2)
+                    cv2.circle(annotated, (cx, cy), 3, color, -1)
+                    cv2.putText(annotated, label, (max(5, cx - r), max(15, cy - r - 6)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     
             # Resize to 960x540 (lower than 1280x720) and reduce JPEG quality for less lag
             annotated_resized = cv2.resize(annotated, (960, 540))

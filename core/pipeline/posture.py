@@ -16,18 +16,28 @@ class PostureLogic:
         return angle
 
     def process(self, keypoints: list = None, bbox: list = None, class_id: int = None) -> str:
-        pose_result = "unknown"
-        if class_id is not None:
-            if class_id == 0:
-                pose_result = "sitting"
-            elif class_id == 1:
-                pose_result = "standing"
+        # 1. Bounding Box Geometry Aspect Ratio Check (Talls < 0.62 = Standing, Wides > 0.85 = Sitting)
+        if bbox is not None and len(bbox) == 4:
+            x1, y1, x2, y2 = bbox
+            width = x2 - x1
+            height = y2 - y1
+            if height > 0:
+                aspect_ratio = width / height
+                if aspect_ratio < 0.62:
+                    return "standing"
+                elif aspect_ratio > 0.85:
+                    return "sitting"
 
-        # First try to use keypoints if available and confident
-        if pose_result == "unknown" and keypoints and len(keypoints) >= 17:
+        # 2. Model Predicted Class ID (0: sitting, 1: standing)
+        if class_id is not None:
+            if class_id == 1:
+                return "standing"
+            elif class_id == 0:
+                return "sitting"
+
+        # 3. Keypoints Pose Fallback
+        if keypoints and len(keypoints) >= 17:
             kpts = np.array(keypoints)
-            
-            # COCO indices: hip=11(L)/12(R), knee=13(L)/14(R), ankle=15(L)/16(R)
             l_hip, l_knee, l_ankle = kpts[11], kpts[13], kpts[15]
             r_hip, r_knee, r_ankle = kpts[12], kpts[14], kpts[16]
             
@@ -43,22 +53,8 @@ class PostureLogic:
             if angles:
                 avg_angle = np.mean(angles)
                 if avg_angle >= self.ANGLE_STANDING_MIN:
-                    pose_result = "standing"
+                    return "standing"
                 elif avg_angle <= self.ANGLE_SITTING_MAX:
-                    pose_result = "sitting"
-        
-        # If keypoints failed (e.g. legs occluded by seats), use bounding box aspect ratio
-        if pose_result == "unknown" and bbox and len(bbox) == 4:
-            x1, y1, x2, y2 = bbox
-            width = x2 - x1
-            height = y2 - y1
-            if height > 0:
-                aspect_ratio = width / height
-                # A squarish or wide box usually indicates sitting, 
-                # a tall box indicates standing
-                if aspect_ratio > 0.75:
-                    pose_result = "sitting"
-                else:
-                    pose_result = "standing"
-                    
-        return pose_result
+                    return "sitting"
+
+        return "sitting"

@@ -105,10 +105,12 @@ class ZoneState:
 
     @property
     def current_occupancy(self) -> int:
-        if self.has_entry_exit_cams:
+        if self.active_tracks:
+            return len(self.active_tracks)
+        elif self.has_entry_exit_cams:
             return max(0, self.entered_today - self.exited_today)
         else:
-            return len(self.active_tracks)
+            return 0
 
     @property
     def remaining_capacity(self) -> int:
