@@ -41,6 +41,11 @@ async def upload_cameras(
         os.makedirs("data/sample_videos", exist_ok=True)
         added = []
 
+        if capacity is not None:
+            config_loader.update_capacity(capacity)
+
+        from api.main import vision_runner
+
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
             
@@ -65,17 +70,11 @@ async def upload_cameras(
             cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role)
             added.append(cam_id)
             
-        if capacity is not None:
-            config_loader.update_capacity(capacity)
-
             # Hot-start a new camera thread in the running pipeline
-            from api.main import vision_runner
             if vision_runner is not None:
-                # If a thread for this camera is already running, stop it first!
-                if cam_id in [c.get("camera_id") for c in vision_runner.cameras_config] or cam_id in vision_runner.latest_frames or any(t.name == f"cam-{cam_id}" and t.is_alive() for t in vision_runner.threads):
-                    vision_runner.stop_camera(cam_id)
-                    time.sleep(1.0) # give it a moment to release cv2 resources
-                    vision_runner.stopped_cameras.discard(cam_id)
+                vision_runner.stop_camera(cam_id)
+                time.sleep(0.3)
+                vision_runner.stopped_cameras.discard(cam_id)
                     
                 cam_config = {
                     "camera_id": cam_id,
@@ -83,7 +82,7 @@ async def upload_cameras(
                     "source": dest,
                     "role": role,
                     "cooldown_seconds": 2.0,
-                    "frame_skip": 3,  # Increased from 1 to reduce YOLO load on 60fps video
+                    "frame_skip": 3,
                 }
                 t = threading.Thread(
                     target=vision_runner._run_camera,

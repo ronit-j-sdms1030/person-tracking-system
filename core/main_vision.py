@@ -70,6 +70,9 @@ class VisionRunner:
         camera_id = cam_config["camera_id"]
         role = cam_config["role"]
 
+        self.stopped_cameras.discard(camera_id)
+        self.paused_cameras.discard(camera_id)
+
         logger.info(f"[{camera_id}] Starting | role={role}")
 
         cam_source = build_adapter(cam_config)
@@ -127,7 +130,7 @@ class VisionRunner:
                     # Also compute posture if role is both
                     posture_state = None
                     if role == "both" and match:
-                        posture_state = posture_logic.process(match.get("keypoints", []), match.get("bbox"))
+                        posture_state = posture_logic.process(match.get("keypoints", []), match.get("bbox"), match.get("class_id"))
                         
                     event_dict = {
                         "camera_id": camera_id,
@@ -151,7 +154,7 @@ class VisionRunner:
                     if role == "both" and track_id in frame_events:
                         continue
                         
-                    posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"))
+                    posture_state = posture_logic.process(d.get("keypoints", []), d.get("bbox"), d.get("class_id"))
                     event_dict = {
                         "camera_id": camera_id,
                         "timestamp": current_time,
@@ -167,11 +170,18 @@ class VisionRunner:
             for d in detections:
                 bbox = d["bbox"]
                 track_id = d.get("track_id", "")
+                cls_id = d.get("class_id", 0)
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
-                    cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(annotated, str(track_id), (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    if cls_id == 0:
+                        color = (245, 135, 179) # BGR for Sitting (purple)
+                        label = f"#{track_id} Sitting"
+                    else:
+                        color = (63, 85, 240)   # BGR for Standing (red)
+                        label = f"#{track_id} Standing"
+                    cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+                    cv2.putText(annotated, label, (x1, max(15, y1 - 8)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
                     
             # Resize to 960x540 (lower than 1280x720) and reduce JPEG quality for less lag
             annotated_resized = cv2.resize(annotated, (960, 540))

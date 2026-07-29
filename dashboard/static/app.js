@@ -45,8 +45,8 @@ function renderZone(zoneData) {
                 
                 const elSitting = document.getElementById(`${prefix}-sitting`);
                 const elStanding = document.getElementById(`${prefix}-standing`);
-                if (elSitting) elSitting.textContent = 0; // Frozen until RT-DETR model is trained
-                if (elStanding) elStanding.textContent = 0; // Frozen until RT-DETR model is trained
+                if (elSitting) elSitting.textContent = cam.sitting || 0;
+                if (elStanding) elStanding.textContent = cam.standing || 0;
             }
         });
     }
@@ -201,6 +201,12 @@ async function uploadCameras() {
       const result = await res.json();
       
       alert(`✅ Added ${result.cameras_added.length} camera(s). Processing started — check the dashboard for live updates!`);
+      
+      // Refresh video streams to ensure they reconnect after a stale upload
+      setTimeout(() => {
+          document.getElementById('vid-cam_door_1').src = document.getElementById('vid-cam_door_1').dataset.src + "?t=" + new Date().getTime();
+          document.getElementById('vid-cam_room_1').src = document.getElementById('vid-cam_room_1').dataset.src + "?t=" + new Date().getTime();
+      }, 500);
   } catch (error) {
       alert(`Error uploading cameras: ${error}`);
   }

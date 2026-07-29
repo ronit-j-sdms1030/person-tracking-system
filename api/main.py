@@ -31,7 +31,17 @@ vision_runner = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup - Clear old videos from config so the dashboard starts fresh!
+    baseline_yaml = """site_id: stark_demo_site
+zones:
+- zone_id: main_floor
+  capacity_max: 25
+  cameras: []
+"""
+    os.makedirs("config", exist_ok=True)
+    with open("config/site_config.yaml", "w") as f:
+        f.write(baseline_yaml)
+
     state_manager.start()
     
     # Start the actual Vision Pipeline!

@@ -15,10 +15,16 @@ class PostureLogic:
         angle = np.degrees(np.arccos(np.clip(cos_theta, -1.0, 1.0)))
         return angle
 
-    def process(self, keypoints: list, bbox: list = None) -> str:
-        # First try to use keypoints if available and confident
+    def process(self, keypoints: list = None, bbox: list = None, class_id: int = None) -> str:
         pose_result = "unknown"
-        if keypoints and len(keypoints) >= 17:
+        if class_id is not None:
+            if class_id == 0:
+                pose_result = "sitting"
+            elif class_id == 1:
+                pose_result = "standing"
+
+        # First try to use keypoints if available and confident
+        if pose_result == "unknown" and keypoints and len(keypoints) >= 17:
             kpts = np.array(keypoints)
             
             # COCO indices: hip=11(L)/12(R), knee=13(L)/14(R), ankle=15(L)/16(R)
