@@ -261,12 +261,11 @@ async function deleteCamera(cameraId) {
 }
 
 async function resetData() {
-    if (!confirm("Are you sure you want to reset all occupancy metrics to 0?")) return;
+    if (!confirm("Are you sure you want to hard reset all cameras and metrics?")) return;
     try {
         const res = await fetch('/reset', { method: 'POST' });
         if (res.ok) {
-            // Trigger an immediate UI update
-            fetchStatus();
+            window.location.reload();
         }
     } catch (e) {
         console.error("Reset failed", e);

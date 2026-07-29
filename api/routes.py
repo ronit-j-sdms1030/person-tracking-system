@@ -23,8 +23,35 @@ def get_zone_status(zone_id: str):
 
 @router.post("/reset")
 def reset_data():
+    from api.main import vision_runner
+    
+    # 1. Clear cameras from config/site_config.yaml
+    baseline_yaml = """site_id: stark_demo_site
+zones:
+- zone_id: main_floor
+  capacity_max: 25
+  capacity_sitting_max: 15
+  capacity_standing_max: 10
+  cameras: []
+"""
+    os.makedirs("config", exist_ok=True)
+    with open("config/site_config.yaml", "w") as f:
+        f.write(baseline_yaml)
+
+    # 2. Stop camera threads & clear frame cache
+    if vision_runner:
+        for cam_id in list(vision_runner.adapters.keys()):
+            vision_runner.stop_camera(cam_id)
+        vision_runner.latest_frames.clear()
+        vision_runner.adapters.clear()
+        vision_runner.threads.clear()
+        vision_runner.stopped_cameras.clear()
+
+    # 3. Clear state manager camera mapping and zone state
+    state_manager.camera_to_zone.clear()
     state_manager.reset_zone("main_floor")
-    return {"status": "ok", "message": "Data reset successfully"}
+    
+    return {"status": "ok", "message": "Hard reset completed successfully"}
 
 @router.get("/cameras")
 def get_cameras_status():
