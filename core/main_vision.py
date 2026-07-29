@@ -95,6 +95,8 @@ class VisionRunner:
         back_desk_y1_max = float(cam_config.get("back_desk_y1_max", 110.0))
         back_desk_y2_max = float(cam_config.get("back_desk_y2_max", 260.0))
         back_desk_x1_min = float(cam_config.get("back_desk_x1_min", 330.0))
+        enable_standing_aisle_roi = cam_config.get("enable_standing_aisle_roi", True)
+        standing_aisle_x1_min = float(cam_config.get("standing_aisle_x1_min", 800.0))
 
         fps = 30.0
         if hasattr(cam_source, 'cap') and cam_source.cap is not None:
@@ -153,7 +155,9 @@ class VisionRunner:
                             enable_back_desk_roi=enable_back_desk_roi,
                             back_desk_y1_max=back_desk_y1_max,
                             back_desk_y2_max=back_desk_y2_max,
-                            back_desk_x1_min=back_desk_x1_min
+                            back_desk_x1_min=back_desk_x1_min,
+                            enable_standing_aisle_roi=enable_standing_aisle_roi,
+                            standing_aisle_x1_min=standing_aisle_x1_min
                         )
                         track_posture_history[track_id].append(raw_p)
                         posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
@@ -188,7 +192,9 @@ class VisionRunner:
                         enable_back_desk_roi=enable_back_desk_roi,
                         back_desk_y1_max=back_desk_y1_max,
                         back_desk_y2_max=back_desk_y2_max,
-                        back_desk_x1_min=back_desk_x1_min
+                        back_desk_x1_min=back_desk_x1_min,
+                        enable_standing_aisle_roi=enable_standing_aisle_roi,
+                        standing_aisle_x1_min=standing_aisle_x1_min
                     )
                     track_posture_history[track_id].append(raw_p)
                     posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
@@ -215,7 +221,9 @@ class VisionRunner:
                     enable_back_desk_roi=enable_back_desk_roi,
                     back_desk_y1_max=back_desk_y1_max,
                     back_desk_y2_max=back_desk_y2_max,
-                    back_desk_x1_min=back_desk_x1_min
+                    back_desk_x1_min=back_desk_x1_min,
+                    enable_standing_aisle_roi=enable_standing_aisle_roi,
+                    standing_aisle_x1_min=standing_aisle_x1_min
                 )
                 if track_id:
                     track_posture_history[track_id].append(raw_p)

@@ -27,6 +27,8 @@ class PostureLogic:
         back_desk_y1_max: float = 110.0,
         back_desk_y2_max: float = 260.0,
         back_desk_x1_min: float = 330.0,
+        enable_standing_aisle_roi: bool = True,
+        standing_aisle_x1_min: float = 800.0,
     ) -> str:
         # Calculate aspect ratio of bounding box if available
         ar = None
@@ -37,7 +39,12 @@ class PostureLogic:
             if height > 0:
                 ar = width / height
 
-            # Spatial ROI Gate for Back-Desk Area (x1 > 330, y1 < 110, y2 < 260):
+            # 1. Doorway / Exit Standing Aisle ROI Gate (x1 > 800 or hcx > 800):
+            if enable_standing_aisle_roi and (x1 > standing_aisle_x1_min or (x1 + x2)/2 > standing_aisle_x1_min):
+                logger.debug(f"[track_{track_id}] posture=standing | signal=DOORWAY_AISLE_ROI_STANDING | class_id={class_id} | ar={round(ar, 2) if ar else None} | bbox={bbox}")
+                return "standing"
+
+            # 2. Spatial ROI Gate for Back-Desk Area (x1 > 330, y1 < 110, y2 < 260):
             if enable_back_desk_roi and (y1 < back_desk_y1_max) and (y2 < back_desk_y2_max) and (x1 > back_desk_x1_min):
                 logger.debug(f"[track_{track_id}] posture=standing | signal=BACK_DESK_SPATIAL_ROI_OCCLUSION_RULE | class_id={class_id} | ar={round(ar, 2) if ar else None} | bbox={bbox}")
                 return "standing"
@@ -45,7 +52,7 @@ class PostureLogic:
         signal = "DEFAULT_SITTING"
         posture = "sitting"
 
-        # 1. Model Predicted Class ID with Geometry Safety Overrides
+        # 3. Model Predicted Class ID with Geometry Safety Overrides
         if class_id is not None:
             if class_id == 1:
                 if ar is not None and ar > 0.78:
@@ -55,7 +62,7 @@ class PostureLogic:
                     posture = "standing"
                     signal = "MODEL_CLASS_STANDING"
             elif class_id == 0:
-                if ar is not None and ar < 0.45:
+                if ar is not None and ar < 0.52:
                     posture = "standing"
                     signal = "MODEL_SITTING_OVERRIDDEN_BY_TALL_AR"
                 else:
