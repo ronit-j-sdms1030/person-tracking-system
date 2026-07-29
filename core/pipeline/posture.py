@@ -54,23 +54,23 @@ class PostureLogic:
 
         # 3. Model Predicted Class ID with Geometry Safety Overrides
         if class_id is not None:
-            if class_id == 1:
-                if ar is not None and ar > 0.78:
-                    posture = "sitting"
-                    signal = "MODEL_STANDING_OVERRIDDEN_BY_WIDE_AR"
-                else:
+            if class_id == 0:
+                if ar is not None and ar < 0.30:
                     posture = "standing"
-                    signal = "MODEL_CLASS_STANDING"
-            elif class_id == 0:
-                if ar is not None and ar < 0.52:
-                    posture = "standing"
-                    signal = "MODEL_SITTING_OVERRIDDEN_BY_TALL_AR"
+                    signal = "MODEL_SITTING_OVERRIDDEN_BY_EXTREMELY_TALL_AR"
                 else:
                     posture = "sitting"
                     signal = "MODEL_CLASS_SITTING"
-        # 2. Pure Geometry Aspect Ratio Fallback
+            elif class_id == 1:
+                if ar is not None and ar > 0.40:
+                    posture = "sitting"
+                    signal = "MODEL_STANDING_OVERRIDDEN_BY_SEATED_AR"
+                else:
+                    posture = "standing"
+                    signal = "MODEL_CLASS_STANDING"
+        # 4. Pure Geometry Aspect Ratio Fallback
         elif ar is not None:
-            if ar < 0.58:
+            if ar < 0.35:
                 posture = "standing"
                 signal = "GEOMETRY_ASPECT_RATIO_TALL"
             else:
