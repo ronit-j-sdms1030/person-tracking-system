@@ -2,14 +2,8 @@ site_id: stark_demo_site
 zones:
 - zone_id: main_floor
   capacity_max: 30
-  capacity_sitting_max: 8
-  capacity_standing_max: 22
-  enable_back_desk_roi: true
-  back_desk_y1_max: 110.0
-  back_desk_y2_max: 260.0
-  back_desk_x1_min: 330.0
-  enable_standing_aisle_roi: true
-  standing_aisle_x1_min: 800.0
+  capacity_sitting_max: 10
+  capacity_standing_max: 20
   cameras:
   - camera_id: cam_door_1
     adapter: file
