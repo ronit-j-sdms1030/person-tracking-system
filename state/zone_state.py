@@ -35,7 +35,8 @@ class ZoneState:
                 self.camera_stats[cam_id]["sitting"] = 0
                 self.camera_stats[cam_id]["standing"] = 0
         
-        self.track_timeout_seconds = 5.0 # Timeout for stale tracks
+        self.track_timeout_seconds = 15.0 # Timeout for stale tracks (15s to prevent pause flickering)
+        self.last_event_time = 0.0
 
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if capacity_sitting is not None:
@@ -51,6 +52,7 @@ class ZoneState:
         self.entered_today = 0
         self.exited_today = 0
         self.active_tracks = {}
+        self.smoothed_occupancy = 0
         for cam_id, stats in self.camera_stats.items():
             if "entered_today" in stats:
                 stats["entered_today"] = 0
@@ -60,6 +62,10 @@ class ZoneState:
                 stats["standing"] = 0
 
     def _cleanup_stale_tracks(self, current_time: float):
+        # Do not expire tracks if system is paused (no recent events within last 3 seconds)
+        if self.last_event_time > 0 and (current_time - self.last_event_time) > 3.0:
+            return
+            
         stale_ids = [
             tid for tid, data in self.active_tracks.items()
             if current_time - data["timestamp"] > self.track_timeout_seconds
@@ -69,6 +75,7 @@ class ZoneState:
 
     def update_from_event(self, event: dict):
         current_time = event.get("timestamp", time.time())
+        self.last_event_time = current_time
         self._cleanup_stale_tracks(current_time)
         
         ev_type = event.get("event")
