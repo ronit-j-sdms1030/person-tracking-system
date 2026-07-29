@@ -210,35 +210,17 @@ class VisionRunner:
                     }
                     self.queue.put(event_dict)
 
-            # Draw clean bounding box rectangles & posture labels for dashboard video feed
+            # Draw clean bounding box rectangles strictly around heads for dashboard video feed
             annotated = frame.copy()
             for d in detections:
-                bbox = d.get("bbox")
+                bbox = d.get("head_bbox", d.get("bbox"))
                 track_id = d.get("track_id", "")
-                raw_p = posture_logic.process(
-                    keypoints=d.get("keypoints", []),
-                    bbox=d.get("body_bbox", d.get("bbox")),
-                    class_id=d.get("class_id"),
-                    track_id=str(track_id),
-                    frame_shape=frame.shape,
-                    enable_back_desk_roi=enable_back_desk_roi,
-                    back_desk_y1_max=back_desk_y1_max,
-                    back_desk_y2_max=back_desk_y2_max,
-                    back_desk_x1_min=back_desk_x1_min,
-                    enable_standing_aisle_roi=enable_standing_aisle_roi,
-                    standing_aisle_x1_min=standing_aisle_x1_min
-                )
-                if track_id:
-                    track_posture_history[track_id].append(raw_p)
-                    posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
-                else:
-                    posture_state = raw_p
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
-                    color = (142, 207, 62) # Crisp BGR Green for Headcount Tracking
+                    color = (142, 207, 62) # Crisp BGR Green for Head Bounding Box
                     label = f"#{track_id}"
                     
-                    # Draw clean rectangular bounding box around person
+                    # Draw clean rectangular bounding box around head
                     cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
                     
                     # Draw text label background pill for crisp contrast

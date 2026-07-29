@@ -154,8 +154,7 @@ class Detector:
                                 best_bbox = b
                     hd["class_id"] = best_cls
                     hd["body_bbox"] = best_bbox
-                    if best_bbox is not None:
-                        hd["bbox"] = best_bbox
+                    hd["head_bbox"] = [hx1, hy1, hx2, hy1 + 0.45 * (hy2 - hy1)]  # Tight head box around head
             return head_detections
 
         # Fallback to RT-DETR body model if head_model is missing
