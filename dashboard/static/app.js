@@ -577,21 +577,14 @@ function openCameraSetupWizard() {
     }
 }
 
-function configureWizardSlots(count, btn) {
+function configureWizardSlots(count) {
     wizardSelectedCount = count;
-    
-    document.querySelectorAll('.wizard-choice-btn').forEach(b => b.classList.remove('active'));
-    if (btn && btn.classList) btn.classList.add('active');
-
     const badge = document.getElementById('wizard-slot-count-badge');
     const container = document.getElementById('wizard-slot-container');
     const inputsDiv = document.getElementById('wizard-slot-inputs');
     
     if (badge) badge.textContent = count;
-    if (container) {
-        container.style.display = 'block';
-        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (container) container.style.display = 'block';
     
     let html = '';
     for (let i = 1; i <= count; i++) {
@@ -694,13 +687,3 @@ function launchDemoSampleFeeds() {
     revealDashboardPanels(2);
     selectCam('both', document.querySelectorAll('.cam-select button')[2]);
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Auto-configure Wizard slots for 2 cameras on initial load so capacity inputs & slot assignment panel are visible immediately
-    const btns = document.querySelectorAll('.wizard-choice-btn');
-    if (btns && btns.length >= 2) {
-        configureWizardSlots(2, btns[1]);
-    } else {
-        configureWizardSlots(2, null);
-    }
-});
