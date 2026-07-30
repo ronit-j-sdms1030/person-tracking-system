@@ -155,10 +155,8 @@ function renderZone(zoneData) {
 
     // Loop through cameras to update their specific stats
     if (zoneData.cameras) {
-        zoneData.cameras.forEach(cam => {
-            let prefix = null;
-            if (cam.camera_id === 'cam_door_1') prefix = 'c1';
-            else if (cam.camera_id === 'cam_room_1') prefix = 'c2';
+        zoneData.cameras.forEach((cam, idx) => {
+            const prefix = `c${idx + 1}`;
 
             if (prefix) {
                 // Update distinct stats specifically for this camera feed
@@ -298,8 +296,79 @@ function renderZone(zoneData) {
     }
 }
 
+let currentRenderedCameras = [];
+
+function buildCameraCards(cameraList) {
+    if (!cameraList || cameraList.length === 0) return;
+    
+    const camIds = cameraList.map(c => typeof c === 'string' ? c : c.camera_id);
+    
+    if (JSON.stringify(camIds) === JSON.stringify(currentRenderedCameras)) return;
+    currentRenderedCameras = camIds;
+
+    const grid = document.getElementById('cam-grid');
+    if (!grid) return;
+
+    let html = '';
+    camIds.forEach((camId, i) => {
+        const num = i + 1;
+        html += `
+        <div class="cam-card" data-cam="${num}">
+          <div class="cam-video-col">
+            <div class="cam-head">
+              <div class="header" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <h2 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:15px; display:flex; align-items:center; gap:8px;">CAM ${num} <span class="tag" style="font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace;">(${camId})</span></h2>
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <button onclick="deleteCamera('${camId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
+                  <div class="status-indicator" id="cam${num}-live" style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--green); font-family:'JetBrains Mono',monospace;">
+                    <i style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite;"></i>
+                    <span>Live</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="video-panel">
+              <div class="caption-tag">${camId} view</div>
+              <img id="vid-${camId}" src="/video_feed/${camId}" data-src="/video_feed/${camId}" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM ${num} feed">
+              <div class="playback-controls">
+                <button onclick="togglePlay('${camId}', this)" class="ctrl-btn" title="Pause">⏸</button>
+                <input type="range" class="seek-bar" id="seek-${camId}" min="0" max="100" value="0" oninput="seekVideo('${camId}', this.value)" title="Scrub Timeline">
+                <button onclick="restartCamera('${camId}')" class="ctrl-btn" title="Restart">↺</button>
+              </div>
+            </div>
+          </div>
+          <div class="stats-col">
+            <div class="stat-grid">
+              <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c${num}-cap">0</div><div class="lbl">Total cap.</div></div>
+              <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c${num}-present">0</div><div class="lbl">Present</div></div>
+              <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c${num}-remaining">0</div><div class="lbl">Remaining</div></div>
+              <div class="chip c${num}-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c${num}-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c${num}-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c${num}-sitting-rem">15</span> rem)</div></div>
+            </div>
+          </div>
+        </div>`;
+    });
+
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.seek-bar').forEach(slider => {
+        slider.addEventListener('mousedown', () => {
+            const id = slider.id.replace('seek-', '');
+            seekDragging[id] = true;
+        });
+        slider.addEventListener('mouseup', () => {
+            const id = slider.id.replace('seek-', '');
+            setTimeout(() => { seekDragging[id] = false; }, 500);
+        });
+    });
+
+    revealDashboardPanels(camIds.length);
+}
+
 function handleInitialState(data) {
     if (data.main_floor) {
+        if (data.main_floor.cameras && data.main_floor.cameras.length > 0) {
+            buildCameraCards(data.main_floor.cameras);
+        }
         renderZone(data.main_floor);
     }
 }
@@ -360,25 +429,23 @@ async function fetchCameraStatus() {
         const response = await fetch('/cameras');
         if (response.ok) {
             const cameras = await response.json();
-            cameras.forEach(cam => {
-                let indicatorId = null;
-                if (cam.camera_id === 'cam_door_1') indicatorId = 'cam1-live';
-                else if (cam.camera_id === 'cam_room_1') indicatorId = 'cam2-live';
-                
-                if (indicatorId) {
-                    const indicator = document.getElementById(indicatorId);
-                    if (indicator) {
-                        if (cam.is_stale) {
-                            indicator.innerHTML = '<i></i>Stale';
-                            indicator.style.color = '#F2B84B'; // amber
-                            indicator.querySelector('i').style.background = '#F2B84B';
-                            indicator.querySelector('i').style.animation = 'none';
-                        } else {
-                            indicator.innerHTML = '<i></i>Live';
-                            indicator.style.color = 'var(--green)';
-                            indicator.querySelector('i').style.background = 'var(--green)';
-                            indicator.querySelector('i').style.animation = 'pulse 1.8s infinite';
-                        }
+            if (cameras && cameras.length > 0) {
+                buildCameraCards(cameras);
+            }
+            cameras.forEach((cam, idx) => {
+                let indicatorId = `cam${idx + 1}-live`;
+                const indicator = document.getElementById(indicatorId);
+                if (indicator) {
+                    if (cam.is_stale) {
+                        indicator.innerHTML = '<i></i>Stale';
+                        indicator.style.color = '#F2B84B'; // amber
+                        indicator.querySelector('i').style.background = '#F2B84B';
+                        indicator.querySelector('i').style.animation = 'none';
+                    } else {
+                        indicator.innerHTML = '<i></i>Live';
+                        indicator.style.color = 'var(--green)';
+                        indicator.querySelector('i').style.background = 'var(--green)';
+                        indicator.querySelector('i').style.animation = 'pulse 1.8s infinite';
                     }
                 }
             });
@@ -632,7 +699,7 @@ async function submitWizardCameras() {
         if (res.ok) {
             const result = await res.json();
             alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
-            revealDashboardPanels(result.cameras_added.length);
+            if (result.cameras_added) buildCameraCards(result.cameras_added);
             selectCam('both', document.querySelectorAll('.cam-select button')[wizardSelectedCount]);
         }
     } catch(e) {
