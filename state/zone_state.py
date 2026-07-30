@@ -151,11 +151,11 @@ class ZoneState:
 
     @property
     def sitting_count(self) -> int:
-        return sum(1 for data in self.active_tracks.values() if data["posture"] == "sitting")
+        return sum(1 for data in self.active_tracks.values() if data.get("posture") == "sitting")
 
     @property
     def standing_count(self) -> int:
-        return sum(1 for data in self.active_tracks.values() if data["posture"] == "standing")
+        return max(0, self.current_occupancy - self.sitting_count)
 
     def to_dict(self) -> dict:
         self._cleanup_stale_tracks(time.time())
