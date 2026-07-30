@@ -199,11 +199,14 @@ function renderZone(zoneData) {
         if (elStandingRem) elStandingRem.textContent = standingRem;
     }
 
-    // Update summary bottom bar total metrics
-    const totalOccEl = document.getElementById('s-total-occupancy');
-    if (totalOccEl) totalOccEl.textContent = 'total ' + present;
-    const totalEntEl = document.getElementById('s-total-entered');
-    if (totalEntEl) totalEntEl.textContent = 'entered ' + entered;
+    // Update summary bottom bar
+    document.getElementById('s-c1-present').textContent = present;
+    document.getElementById('s-c1-remaining').textContent = remaining;
+    document.getElementById('s-c2-present').textContent = present;
+    document.getElementById('s-c2-remaining').textContent = remaining;
+    
+    document.getElementById('s-total-occupancy').textContent = 'total ' + present;
+    document.getElementById('s-total-entered').textContent = 'entered ' + entered;
 
 
 }
@@ -308,13 +311,10 @@ function syncTotalCap() {
 }
 
 // --- Multi-file Upload Logic --- lock role per slot
-const videoFilesEl = document.getElementById('video-files');
-if (videoFilesEl) {
-  videoFilesEl.addEventListener('change', (e) => {
-    const container = document.getElementById('role-assign');
-    if (!container) return;
-    container.innerHTML = '';
-    [...e.target.files].forEach((file, i) => {
+document.getElementById('video-files').addEventListener('change', (e) => {
+  const container = document.getElementById('role-assign');
+  container.innerHTML = '';
+  [...e.target.files].forEach((file, i) => {
     // Default to Camera 1 for first file, Camera 2 for second file
     const defaultSlot = (i === 0) ? 'cam_door_1' : 'cam_room_1';
     container.innerHTML += `
@@ -411,43 +411,46 @@ async function resetData() {
     try {
         const res = await fetch('/reset', { method: 'POST' });
         if (res.ok) {
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            // Reset JS state variables
-            maxPeakHeadcount = 0;
-            totalHeadcountSum = 0;
-            totalSampleCount = 0;
-            cam1Samples = [];
-            cam2Samples = [];
-            peakTimeRecorded = "--:--";
-
-            // Reset DOM analytics metrics immediately
-            const peakEl = document.getElementById('peak-headcount-val');
-            if (peakEl) peakEl.textContent = '0';
-            const avgEl = document.getElementById('avg-headcount-val');
-            if (avgEl) avgEl.textContent = '0.0';
-            const utilEl = document.getElementById('utilization-rate-val');
-            if (utilEl) utilEl.textContent = '0%';
-            const timeEl = document.getElementById('peak-time-val');
-            if (timeEl) timeEl.textContent = '--:--';
-
-            // Reset Chart.js datasets
-            if (cam1TrendChart) {
-                cam1TrendChart.data.labels = [];
-                cam1TrendChart.data.datasets[0].data = [];
-                cam1TrendChart.update();
-            }
-            if (cam2TrendChart) {
-                cam2TrendChart.data.labels = [];
-                cam2TrendChart.data.datasets[0].data = [];
-                cam2TrendChart.update();
-            }
-
             window.location.reload();
         }
     } catch (e) {
         console.error("Reset failed", e);
+    }
+}
+
+async function editCamCapacity(camId, num) {
+    const currentVal = document.getElementById(`c${num}-cap`) ? document.getElementById(`c${num}-cap`).textContent : 25;
+    const newVal = prompt(`Set Capacity for Camera ${num} (${camId}):`, currentVal);
+    if (newVal !== null && !isNaN(parseInt(newVal)) && parseInt(newVal) > 0) {
+        const cap = parseInt(newVal);
+        try {
+            const formData = new FormData();
+            formData.append('capacity', cap);
+            const res = await fetch(`/cameras/${camId}/capacity`, { method: 'POST', body: formData });
+            if (res.ok) {
+                if (typeof fetchStatus === 'function') fetchStatus();
+            } else {
+                alert("Failed to update camera capacity.");
+            }
+        } catch(e) {
+            alert("Error: " + e);
+        }
+    }
+}
+
+async function applyQuickCapacity() {
+    const val = parseInt(document.getElementById('quick-cap-input').value);
+    if (isNaN(val) || val <= 0) return;
+    try {
+        const formData = new FormData();
+        formData.append('capacity', val);
+        const res = await fetch('/capacity', { method: 'POST', body: formData });
+        if (res.ok) {
+            if (typeof fetchStatus === 'function') fetchStatus();
+            alert(`✅ Global capacity updated to ${val} across all cameras!`);
+        }
+    } catch(e) {
+        alert("Error: " + e);
     }
 }
 
@@ -530,10 +533,7 @@ function configureWizardSlots(count) {
     const inputsDiv = document.getElementById('wizard-slot-inputs');
     
     if (badge) badge.textContent = count;
-    if (container) {
-        container.style.display = 'block';
-        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (container) container.style.display = 'block';
     
     let html = '';
     for (let i = 1; i <= count; i++) {
@@ -545,7 +545,13 @@ function configureWizardSlots(count) {
                     <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--text);">Camera ${i}</span>
                     <input type="text" id="wizard-cam-name-${i}" value="${existingName}" placeholder="Enter name (e.g. Lobby)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:3px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px; width:130px; outline:none;">
                 </div>
-                <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:6px; background:var(--panel-2); border:1px solid var(--panel-border); padding:4px 8px; border-radius:8px;">
+                        <span style="font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; font-weight:600;">Capacity:</span>
+                        <input type="number" id="wizard-cam-cap-${i}" value="25" min="1" max="1000" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:3px 6px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11.5px; width:55px; outline:none; font-weight:600;">
+                    </div>
+                    <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
+                </div>
             </div>`;
     }
     if (inputsDiv) inputsDiv.innerHTML = html;
@@ -558,6 +564,7 @@ async function submitWizardCameras() {
     for (let i = 1; i <= wizardSelectedCount; i++) {
         const fileInput = document.getElementById(`wizard-file-${i}`);
         const nameInput = document.getElementById(`wizard-cam-name-${i}`);
+        const capInput = document.getElementById(`wizard-cam-cap-${i}`);
         if (nameInput && nameInput.value.trim()) {
             localStorage.setItem(`cam_${i}_name`, nameInput.value.trim());
         }
@@ -566,6 +573,7 @@ async function submitWizardCameras() {
             formData.append('files', fileInput.files[0]);
             formData.append('roles', 'both');
             formData.append('slots', slotName);
+            formData.append('cam_capacities', parseInt(capInput ? capInput.value : 25) || 25);
             fileAdded = true;
         }
     }
@@ -601,13 +609,18 @@ async function submitWizardCameras() {
 }
 
 function revealDashboardPanels(cameraCount) {
+    const wizard = document.getElementById('initial-setup-wizard');
+    if (wizard) wizard.style.display = 'none';
+
     const selectBar = document.getElementById('cam-select-bar');
     const grid = document.getElementById('cam-grid');
     const summary = document.getElementById('summary-bar');
+    const analytics = document.getElementById('analytics-panel');
     
     if (selectBar) selectBar.style.display = 'flex';
     if (grid) grid.style.display = 'grid';
     if (summary) summary.style.display = 'flex';
+    if (analytics) analytics.style.display = 'block';
 
     // Build single-camera view navigation buttons for all configured cameras
     const selectDiv = document.getElementById('cam-select');

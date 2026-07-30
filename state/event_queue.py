@@ -61,14 +61,11 @@ class StateManager:
         if zone_id in self.zones:
             self.zones[zone_id].update_capacity(capacity, capacity_sitting, capacity_standing)
 
+    def update_camera_capacity(self, camera_id: str, capacity: int):
+        for zone in self.zones.values():
+            zone.update_camera_capacity(camera_id, capacity)
+
     def reset_zone(self, zone_id: str):
-        # Empty any pending queued events to prevent processing stale events after reset
-        while not self.event_queue.empty():
-            try:
-                self.event_queue.get_nowait()
-            except Exception:
-                break
-        self.camera_last_event.clear()
         if zone_id in self.zones:
             self.zones[zone_id].reset()
 

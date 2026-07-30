@@ -26,7 +26,8 @@ class ZoneState:
             role = cam.get("role", "entry_exit")
             self.camera_stats[cam_id] = {
                 "camera_id": cam_id,
-                "role": role
+                "role": role,
+                "capacity": cam.get("capacity", self.capacity_max)
             }
             if role in ["entry_exit", "both"]:
                 self.camera_stats[cam_id]["entered_today"] = 0
@@ -47,6 +48,16 @@ class ZoneState:
             self.capacity_max = capacity
         elif capacity_sitting is not None or capacity_standing is not None:
             self.capacity_max = self.capacity_sitting_max + self.capacity_standing_max
+
+    def update_camera_capacity(self, camera_id: str, capacity: int):
+        if camera_id in self.camera_stats:
+            self.camera_stats[camera_id]["capacity"] = capacity
+        else:
+            self.camera_stats[camera_id] = {
+                "camera_id": camera_id,
+                "role": "both",
+                "capacity": capacity
+            }
 
     def reset(self):
         self.entered_today = 0
@@ -112,12 +123,11 @@ class ZoneState:
             pass
         
         if track_id is not None:
-            full_key = f"{cam_id}_{track_id}" if cam_id else str(track_id)
             if ev_type == "exited":
-                if full_key in self.active_tracks:
-                    del self.active_tracks[full_key]
+                if track_id in self.active_tracks:
+                    del self.active_tracks[track_id]
             else:
-                self.active_tracks[full_key] = {
+                self.active_tracks[track_id] = {
                     "timestamp": current_time,
                     "posture": posture if posture else "unknown",
                     "camera_id": cam_id
@@ -164,8 +174,10 @@ class ZoneState:
         # Tally current posture and distinct occupancy per camera
         for cam_id, stats in self.camera_stats.items():
             cam_count = sum(1 for data in self.active_tracks.values() if data.get("camera_id") == cam_id)
+            cam_cap = stats.get("capacity", self.capacity_max)
+            stats["capacity"] = cam_cap
             stats["current_occupancy"] = cam_count
-            stats["remaining_capacity"] = max(0, self.capacity_max - cam_count)
+            stats["remaining_capacity"] = max(0, cam_cap - cam_count)
             if "sitting" in stats:
                 stats["sitting"] = 0
                 stats["standing"] = 0
