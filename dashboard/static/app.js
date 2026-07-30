@@ -544,3 +544,87 @@ document.querySelectorAll('.seek-bar').forEach(slider => {
         setTimeout(() => { seekDragging[id] = false; }, 500);
     });
 });
+
+// --- Initial Camera Setup Wizard Logic ---
+let wizardSelectedCount = 2;
+
+function openCameraSetupWizard() {
+    const wizard = document.getElementById('initial-setup-wizard');
+    if (wizard) {
+        wizard.style.display = 'block';
+        wizard.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function configureWizardSlots(count) {
+    wizardSelectedCount = count;
+    const badge = document.getElementById('wizard-slot-count-badge');
+    const container = document.getElementById('wizard-slot-container');
+    const inputsDiv = document.getElementById('wizard-slot-inputs');
+    
+    if (badge) badge.textContent = count;
+    if (container) container.style.display = 'block';
+    
+    let html = '';
+    for (let i = 1; i <= count; i++) {
+        const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
+        html += `
+            <div style="background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--text);">Camera ${i} Slot</span>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); font-weight:500;">(${slotName})</span>
+                </div>
+                <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
+            </div>`;
+    }
+    if (inputsDiv) inputsDiv.innerHTML = html;
+}
+
+async function submitWizardCameras() {
+    const formData = new FormData();
+    let fileAdded = false;
+    
+    for (let i = 1; i <= wizardSelectedCount; i++) {
+        const fileInput = document.getElementById(`wizard-file-${i}`);
+        if (fileInput && fileInput.files.length > 0) {
+            const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
+            formData.append('files', fileInput.files[0]);
+            formData.append('roles', 'both');
+            formData.append('slots', slotName);
+            fileAdded = true;
+        }
+    }
+    
+    if (!fileAdded) {
+        alert("Please choose a video file for your camera slots or click '⚡ Launch Sample Feeds'!");
+        return;
+    }
+    
+    const launchBtn = document.getElementById('wizard-launch-btn');
+    if (launchBtn) {
+        launchBtn.disabled = true;
+        launchBtn.textContent = "⏳ Setting Up Cameras...";
+    }
+    
+    try {
+        const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
+        if (res.ok) {
+            const result = await res.json();
+            alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
+            document.getElementById('initial-setup-wizard').style.display = 'none';
+            selectCam('both', document.querySelectorAll('.cam-select button')[2]);
+        }
+    } catch(e) {
+        alert(`Notice: ${e}`);
+    } finally {
+        if (launchBtn) {
+            launchBtn.disabled = false;
+            launchBtn.textContent = "🚀 Confirm & Launch Cameras";
+        }
+    }
+}
+
+function launchDemoSampleFeeds() {
+    document.getElementById('initial-setup-wizard').style.display = 'none';
+    selectCam('both', document.querySelectorAll('.cam-select button')[2]);
+}
