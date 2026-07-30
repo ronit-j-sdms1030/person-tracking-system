@@ -4,16 +4,4 @@ zones:
   capacity_max: 25
   capacity_sitting_max: 15
   capacity_standing_max: 10
-  cameras:
-  - camera_id: cam_door_1
-    adapter: file
-    source: data/sample_videos/Passengers_inside_Pune_Metro_train_202607301244.mp4
-    role: both
-    frame_skip: 1
-    cooldown_seconds: 2.0
-  - camera_id: cam_room_1
-    adapter: file
-    source: data/sample_videos/15873107_1080_1920_25fps.mp4
-    role: both
-    frame_skip: 1
-    cooldown_seconds: 2.0
+  cameras: []

@@ -642,6 +642,20 @@ function openCameraSetupWizard() {
         wizard.style.display = 'block';
         wizard.scrollIntoView({ behavior: 'smooth' });
     }
+
+    const selectBar = document.getElementById('cam-select-bar');
+    const grid = document.getElementById('cam-grid');
+    const summary = document.getElementById('summary-bar');
+    const analytics = document.getElementById('analytics-panel');
+    const seating = document.querySelector('.seating-plan-panel');
+    const graphPanel = document.querySelector('.graph-panel');
+
+    if (selectBar) selectBar.style.display = 'none';
+    if (grid) grid.style.display = 'none';
+    if (summary) summary.style.display = 'none';
+    if (analytics) analytics.style.display = 'none';
+    if (seating) seating.style.display = 'none';
+    if (graphPanel) graphPanel.style.display = 'none';
 }
 
 function configureWizardSlots(count) {

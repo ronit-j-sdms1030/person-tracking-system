@@ -72,7 +72,20 @@ os.makedirs("dashboard/static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
 
 import uuid
-SERVER_SESSION_SECRET = str(uuid.uuid4())
+SESSION_SECRET_FILE = ".session_secret"
+if os.path.exists(SESSION_SECRET_FILE):
+    try:
+        with open(SESSION_SECRET_FILE, "r") as f:
+            SERVER_SESSION_SECRET = f.read().strip()
+    except Exception:
+        SERVER_SESSION_SECRET = str(uuid.uuid4())
+else:
+    SERVER_SESSION_SECRET = str(uuid.uuid4())
+    try:
+        with open(SESSION_SECRET_FILE, "w") as f:
+            f.write(SERVER_SESSION_SECRET)
+    except Exception:
+        pass
 
 @app.get("/")
 def serve_dashboard(request: Request):
@@ -87,16 +100,23 @@ def serve_login():
 @app.post("/login")
 def login(response: Response, username: str = Form(...), password: str = Form(...)):
     if username == "admin" and password == "password":
-        response = Response(status_code=200)
-        response.set_cookie(key="session", value=SERVER_SESSION_SECRET, httponly=True)
-        return response
+        res = Response(status_code=200)
+        res.set_cookie(
+            key="session", 
+            value=SERVER_SESSION_SECRET, 
+            httponly=True,
+            max_age=2592000,
+            path="/",
+            samesite="lax"
+        )
+        return res
     return Response(status_code=401)
 
 @app.get("/logout")
 def logout(response: Response):
-    response = RedirectResponse("/login")
-    response.delete_cookie("session")
-    return response
+    res = RedirectResponse("/login")
+    res.delete_cookie("session", path="/")
+    return res
 
 if __name__ == "__main__":
     import uvicorn
