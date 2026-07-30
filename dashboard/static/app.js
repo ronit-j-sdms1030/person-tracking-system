@@ -199,14 +199,11 @@ function renderZone(zoneData) {
         if (elStandingRem) elStandingRem.textContent = standingRem;
     }
 
-    // Update summary bottom bar
-    document.getElementById('s-c1-present').textContent = present;
-    document.getElementById('s-c1-remaining').textContent = remaining;
-    document.getElementById('s-c2-present').textContent = present;
-    document.getElementById('s-c2-remaining').textContent = remaining;
-    
-    document.getElementById('s-total-occupancy').textContent = 'total ' + present;
-    document.getElementById('s-total-entered').textContent = 'entered ' + entered;
+    // Update summary bottom bar total metrics
+    const totalOccEl = document.getElementById('s-total-occupancy');
+    if (totalOccEl) totalOccEl.textContent = 'total ' + present;
+    const totalEntEl = document.getElementById('s-total-entered');
+    if (totalEntEl) totalEntEl.textContent = 'entered ' + entered;
 
 
 }
@@ -413,12 +410,37 @@ async function resetData() {
         if (res.ok) {
             localStorage.clear();
             sessionStorage.clear();
+            
+            // Reset JS state variables
             maxPeakHeadcount = 0;
             totalHeadcountSum = 0;
             totalSampleCount = 0;
             cam1Samples = [];
             cam2Samples = [];
             peakTimeRecorded = "--:--";
+
+            // Reset DOM analytics metrics immediately
+            const peakEl = document.getElementById('peak-headcount-val');
+            if (peakEl) peakEl.textContent = '0';
+            const avgEl = document.getElementById('avg-headcount-val');
+            if (avgEl) avgEl.textContent = '0.0';
+            const utilEl = document.getElementById('utilization-rate-val');
+            if (utilEl) utilEl.textContent = '0%';
+            const timeEl = document.getElementById('peak-time-val');
+            if (timeEl) timeEl.textContent = '--:--';
+
+            // Reset Chart.js datasets
+            if (cam1TrendChart) {
+                cam1TrendChart.data.labels = [];
+                cam1TrendChart.data.datasets[0].data = [];
+                cam1TrendChart.update();
+            }
+            if (cam2TrendChart) {
+                cam2TrendChart.data.labels = [];
+                cam2TrendChart.data.datasets[0].data = [];
+                cam2TrendChart.update();
+            }
+
             window.location.reload();
         }
     } catch (e) {
