@@ -134,7 +134,10 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            if frame_counter % 2 == 0 or not last_detections:
+            active_cams_count = len(getattr(self, "threads", []))
+            skip_rate = 3 if active_cams_count > 1 else 2
+            
+            if frame_counter % skip_rate == 0 or not last_detections:
                 detections = tracker.process_frame(frame)
                 last_detections = detections
             else:
@@ -248,6 +251,12 @@ class VisionRunner:
             sleep_time = frame_delay - elapsed
             if sleep_time > 0:
                 time.sleep(sleep_time)
+            elif elapsed > frame_delay * 1.8:
+                # Drop lagging frame to maintain real-time stream sync
+                try:
+                    cam_source.read_frame()
+                except Exception:
+                    pass
 
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")

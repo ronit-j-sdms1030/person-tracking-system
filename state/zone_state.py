@@ -112,11 +112,12 @@ class ZoneState:
             pass
         
         if track_id is not None:
+            full_key = f"{cam_id}_{track_id}" if cam_id else str(track_id)
             if ev_type == "exited":
-                if track_id in self.active_tracks:
-                    del self.active_tracks[track_id]
+                if full_key in self.active_tracks:
+                    del self.active_tracks[full_key]
             else:
-                self.active_tracks[track_id] = {
+                self.active_tracks[full_key] = {
                     "timestamp": current_time,
                     "posture": posture if posture else "unknown",
                     "camera_id": cam_id
