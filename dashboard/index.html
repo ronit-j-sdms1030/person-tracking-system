@@ -288,9 +288,11 @@
     </div>
   </div>
 
-  <div class="cam-select-bar" id="cam-select-bar" style="display:none;">
+  <div class="cam-select-bar" id="cam-select-bar">
     <div class="cam-select" id="cam-select">
-      <!-- Dynamic camera view buttons generated dynamically -->
+      <button onclick="selectCam('1', this)">Cam 1</button>
+      <button onclick="selectCam('2', this)">Cam 2</button>
+      <button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>
     </div>
 
     <!-- Provision to set how many cameras user wants per row -->
@@ -305,14 +307,88 @@
     </div>
   </div>
 
-  <div class="cam-grid cols-2" id="cam-grid" style="display:none;">
-    <!-- Dynamic camera cards constructed here -->
+  <div class="cam-grid cols-2" id="cam-grid">
+
+    <div class="cam-card" data-cam="1">
+      <div class="cam-video-col">
+        <div class="cam-head">
+          <div class="header">
+            <h2>CAM 1 <span class="tag">doorway</span></h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button onclick="deleteCamera('cam_door_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
+              <div class="status-indicator" id="c1-status">
+                <div class="dot"></div>
+                <span>Live</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="video-panel">
+          <div class="caption-tag">doorway view</div>
+          <img id="vid-cam_door_1" src="/video_feed/cam_door_1" data-src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 1 feed">
+          <!-- Custom Playback Controls -->
+          <div class="playback-controls">
+            <button onclick="togglePlay('cam_door_1', this)" class="ctrl-btn" title="Pause">⏸</button>
+            <input type="range" class="seek-bar" id="seek-cam_door_1" min="0" max="100" value="0" oninput="seekVideo('cam_door_1', this.value)" title="Scrub Timeline">
+            <button onclick="restartCamera('cam_door_1')" class="ctrl-btn" title="Restart">↺</button>
+          </div>
+        </div>
+      </div>
+      <div class="stats-col">
+        <div class="stat-grid">
+          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c1-cap">25</div><div class="lbl">Total cap.</div></div>
+          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c1-present">0</div><div class="lbl">Present</div></div>
+          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c1-remaining">25</div><div class="lbl">Remaining</div></div>
+          
+          <div class="chip c1-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c1-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c1-sitting-rem">15</span> rem)</div></div>
+          <div class="chip wide c1-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c1-standing-rem">10</span> rem)</div><div class="num"><span id="c1-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-standing-max">10</span></span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cam-card" data-cam="2">
+      <div class="cam-video-col">
+        <div class="cam-head">
+          <div class="header">
+            <h2>CAM 2 <span class="tag">interior</span></h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button onclick="deleteCamera('cam_room_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
+              <div class="status-indicator" id="c2-status">
+                <div class="dot"></div>
+                <span>Live</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="video-panel">
+          <div class="caption-tag">interior view</div>
+          <img id="vid-cam_room_1" src="/video_feed/cam_room_1" data-src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 2 feed">
+          <!-- Custom Playback Controls -->
+          <div class="playback-controls">
+            <button onclick="togglePlay('cam_room_1', this)" class="ctrl-btn" title="Pause">⏸</button>
+            <input type="range" class="seek-bar" id="seek-cam_room_1" min="0" max="100" value="0" oninput="seekVideo('cam_room_1', this.value)" title="Scrub Timeline">
+            <button onclick="restartCamera('cam_room_1')" class="ctrl-btn" title="Restart">↺</button>
+          </div>
+        </div>
+      </div>
+      <div class="stats-col">
+        <div class="stat-grid">
+          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c2-cap">25</div><div class="lbl">Total cap.</div></div>
+          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">0</div><div class="lbl">Present</div></div>
+          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">25</div><div class="lbl">Remaining</div></div>
+
+          <div class="chip c2-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c2-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c2-sitting-rem">15</span> rem)</div></div>
+          <div class="chip wide c2-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c2-standing-rem">10</span> rem)</div><div class="num"><span id="c2-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-standing-max">10</span></span></div></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="summary-bar" id="summary-bar" style="display:none;">
+  <div class="summary-bar" id="summary-bar">
     <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">0</b> present · <b id="s-c1-remaining">25</b> remain</div>
-    <div class="divider" id="sum-div" style="display:none;"></div>
-    <div class="grp" id="sum-cam2" style="display:none;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
+    <div class="divider" id="sum-div" style="display:flex;"></div>
+    <div class="grp" id="sum-cam2" style="display:flex;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
     <div class="spacer"></div>
     <div class="pill" id="s-total-occupancy">total 0</div>
     <div class="pill" id="s-total-entered" style="display:none;">entered 0</div>
