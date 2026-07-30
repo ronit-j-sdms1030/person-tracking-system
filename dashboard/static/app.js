@@ -77,6 +77,37 @@ function renderZone(zoneData) {
     
     document.getElementById('s-total-occupancy').textContent = 'total ' + present;
     document.getElementById('s-total-entered').textContent = 'entered ' + entered;
+
+    // Render Interactive Seating Plan Map
+    const seatGrid = document.getElementById('seat-grid');
+    const seatSummary = document.getElementById('seat-plan-summary');
+    const seatProgressBar = document.getElementById('seat-progress-bar');
+    
+    if (seatGrid) {
+        const sittingCount = zoneData.sitting_count || 0;
+        const totalSeats = sittingMax;
+        const pct = Math.round(Math.min(100, (sittingCount / totalSeats) * 100));
+        
+        if (seatSummary) seatSummary.textContent = `${sittingCount} / ${totalSeats} Seats Occupied (${pct}%)`;
+        if (seatProgressBar) seatProgressBar.style.width = `${pct}%`;
+        
+        let gridHTML = '';
+        for (let i = 1; i <= totalSeats; i++) {
+            const isOccupied = i <= sittingCount;
+            const bg = isOccupied ? 'rgba(168, 85, 247, 0.2)' : 'var(--panel-2)';
+            const border = isOccupied ? '#A855F7' : 'var(--panel-border)';
+            const color = isOccupied ? '#C084FC' : 'var(--muted)';
+            const statusText = isOccupied ? 'OCCUPIED' : 'FREE';
+            
+            gridHTML += `
+                <div style="background:${bg}; border:1px solid ${border}; border-radius:8px; padding:10px 8px; text-align:center; transition:all 0.3s ease;">
+                    <div style="font-size:16px; margin-bottom:2px;">🪑</div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:${color};">Seat ${i}</div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:600; color:${color}; opacity:0.9; margin-top:3px; text-transform:uppercase;">${statusText}</div>
+                </div>`;
+        }
+        seatGrid.innerHTML = gridHTML;
+    }
 }
 
 function handleInitialState(data) {

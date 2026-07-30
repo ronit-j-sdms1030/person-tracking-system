@@ -210,15 +210,29 @@ class VisionRunner:
                     }
                     self.queue.put(event_dict)
 
-            # Draw clean bounding box rectangles strictly around heads for dashboard video feed
+            # Draw clean bounding box rectangles with distinct colors for Sitting vs Standing
             annotated = frame.copy()
             for d in detections:
                 bbox = d.get("head_bbox", d.get("bbox"))
                 track_id = d.get("track_id", "")
                 if bbox and len(bbox) == 4:
                     x1, y1, x2, y2 = map(int, bbox)
-                    color = (142, 207, 62) # Crisp BGR Green for Head Bounding Box
-                    label = f"#{track_id}"
+                    
+                    # Compute posture state for distinct color rendering
+                    p_state = "standing"
+                    if posture_logic:
+                        p_state = posture_logic.process(
+                            bbox=bbox,
+                            class_id=d.get("class_id"),
+                            frame_shape=frame.shape
+                        )
+
+                    if p_state == "sitting":
+                        color = (235, 130, 60)  # Vibrant Blue/Cyan for SITTING
+                        label = f"#{track_id} Sit"
+                    else:
+                        color = (142, 207, 62)  # Crisp Green for STANDING
+                        label = f"#{track_id}"
                     
                     # Draw clean rectangular bounding box around head
                     cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)

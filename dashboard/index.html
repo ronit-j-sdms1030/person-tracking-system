@@ -307,6 +307,26 @@
     <div class="pill" id="s-total-entered" style="display:none;">entered 175</div>
   </div>
 
+  <!-- Interactive Seating Plan & Seat Occupancy Map -->
+  <div class="seating-plan-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; display:flex; align-items:center; gap:8px;">
+        <span>🪑 Seating Plan & Seat Layout</span>
+      </h3>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--purple); background:var(--chip-purple-bg); padding:4px 12px; border-radius:12px; border:1px solid var(--panel-border);" id="seat-plan-summary">
+        0 / 15 Seats Occupied (0%)
+      </span>
+    </div>
+    
+    <!-- Seat Visual Progress Bar -->
+    <div style="width:100%; height:8px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin-bottom:16px; border:1px solid var(--panel-border);">
+      <div id="seat-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #A855F7, #3B82F6); transition:width 0.4s ease;"></div>
+    </div>
+    
+    <!-- Visual Seat Map Grid -->
+    <div id="seat-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:10px;"></div>
+  </div>
+
   <!-- Upload Panel for dynamic camera addition -->
   <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
     <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
