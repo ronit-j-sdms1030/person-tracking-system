@@ -174,41 +174,37 @@ class VisionRunner:
                     self.queue.put(event_dict)
                     logger.info(f"[{camera_id}] EVENT → {event_dict}")
 
-            # For posture-only updates, or posture updates in "both" mode when there isn't an entry/exit event
-            if role in ["posture", "both"]:
-                for d in detections:
-                    track_id = d.get("track_id")
-                    if track_id is None:
-                        continue
-                        
-                    # Skip if we already emitted an entry/exit event for this track in this frame (if role == "both")
-                    if role == "both" and track_id in frame_events:
-                        continue
-                        
-                    raw_p = posture_logic.process(
-                        keypoints=d.get("keypoints", []),
-                        bbox=d.get("body_bbox", d.get("bbox")),
-                        class_id=d.get("class_id"),
-                        track_id=str(track_id),
-                        frame_shape=frame.shape,
-                        enable_back_desk_roi=enable_back_desk_roi,
-                        back_desk_y1_max=back_desk_y1_max,
-                        back_desk_y2_max=back_desk_y2_max,
-                        back_desk_x1_min=back_desk_x1_min,
-                        enable_standing_aisle_roi=enable_standing_aisle_roi,
-                        standing_aisle_x1_min=standing_aisle_x1_min
-                    )
-                    track_posture_history[track_id].append(raw_p)
-                    posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
-                    event_dict = {
-                        "camera_id": camera_id,
-                        "timestamp": current_time,
-                        "track_id": track_id,
-                        "bbox": [round(v, 1) for v in d["bbox"]],
-                        "event": None,
-                        "posture": posture_state,
-                    }
-                    self.queue.put(event_dict)
+            # Process posture updates for all detections across all cameras unconditionally
+            for d in detections:
+                track_id = d.get("track_id")
+                if track_id is None:
+                    continue
+                    
+                raw_p = posture_logic.process(
+                    keypoints=d.get("keypoints", []),
+                    bbox=d.get("head_bbox", d.get("bbox")),
+                    class_id=d.get("class_id"),
+                    track_id=str(track_id),
+                    frame_shape=frame.shape,
+                    enable_back_desk_roi=enable_back_desk_roi,
+                    back_desk_y1_max=back_desk_y1_max,
+                    back_desk_y2_max=back_desk_y2_max,
+                    back_desk_x1_min=back_desk_x1_min,
+                    enable_standing_aisle_roi=enable_standing_aisle_roi,
+                    standing_aisle_x1_min=standing_aisle_x1_min
+                ) if posture_logic else "standing"
+                
+                track_posture_history[track_id].append(raw_p)
+                posture_state = collections.Counter(track_posture_history[track_id]).most_common(1)[0][0]
+                event_dict = {
+                    "camera_id": camera_id,
+                    "timestamp": current_time,
+                    "track_id": track_id,
+                    "bbox": [round(v, 1) for v in d["bbox"]],
+                    "event": None,
+                    "posture": posture_state,
+                }
+                self.queue.put(event_dict)
 
             # Draw clean bounding box rectangles with distinct colors for Sitting vs Standing
             annotated = frame.copy()
