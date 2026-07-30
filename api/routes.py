@@ -25,7 +25,11 @@ def get_zone_status(zone_id: str):
 def reset_data():
     from api.main import vision_runner
     
-    # 1. Reset site_config.yaml to default sample video feeds
+    # 1. Stop vision runner completely to cease new event generation
+    if vision_runner:
+        vision_runner.stop()
+
+    # 2. Reset site_config.yaml to default sample video feeds
     sample_office = "data/sample_videos/VIDEO-2026-07-28-15-36-24.mp4"
     sample_bus = "data/sample_videos/CCTV_footage_school_bus_students_202607281532.mp4"
     office_src = sample_office if os.path.exists(sample_office) else "data/sample_videos/VIDEO-2026-07-28-15-36-24 (1).mp4"
@@ -54,33 +58,14 @@ zones:
     with open("config/site_config.yaml", "w") as f:
         f.write(baseline_yaml)
 
-    # 2. Stop camera threads & clear frame cache
-    if vision_runner:
-        adapters = getattr(vision_runner, "adapters", {})
-        for cam_id in list(adapters.keys()):
-            try:
-                vision_runner.stop_camera(cam_id)
-            except Exception as e:
-                logger.warning(f"Error stopping camera {cam_id}: {e}")
-        if hasattr(vision_runner, "latest_frames"):
-            vision_runner.latest_frames.clear()
-        if hasattr(vision_runner, "adapters"):
-            vision_runner.adapters.clear()
-        if hasattr(vision_runner, "stopped_cameras"):
-            vision_runner.stopped_cameras.clear()
-        if hasattr(vision_runner, "threads"):
-            vision_runner.threads.clear()
-
-    # 3. Reload config_loader & reset state manager
+    # 3. Reload config_loader & reset state manager (clears queue & metrics)
     config_loader.load_and_validate()
     state_manager.camera_to_zone.clear()
-    state_manager.reset_zone("main_floor")
-    
-    # Re-initialize state manager mapping for default cameras
     state_manager.camera_to_zone["cam_door_1"] = "main_floor"
     state_manager.camera_to_zone["cam_room_1"] = "main_floor"
+    state_manager.reset_zone("main_floor")
 
-    # 4. Restart vision runner with baseline config
+    # 4. Restart vision runner cleanly with baseline configuration
     if vision_runner:
         vision_runner.cameras_config = config_loader.raw_data["zones"][0]["cameras"]
         vision_runner.start()

@@ -413,6 +413,12 @@ async function resetData() {
         if (res.ok) {
             localStorage.clear();
             sessionStorage.clear();
+            maxPeakHeadcount = 0;
+            totalHeadcountSum = 0;
+            totalSampleCount = 0;
+            cam1Samples = [];
+            cam2Samples = [];
+            peakTimeRecorded = "--:--";
             window.location.reload();
         }
     } catch (e) {
