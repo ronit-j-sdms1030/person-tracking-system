@@ -128,10 +128,33 @@ class Detector:
                         })
         elif self.head_model:
             if track:
-                head_results = self.head_model.track(frame, conf=0.22, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                head_results = self.head_model.track(frame, conf=0.24, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
             else:
-                head_results = self.head_model(frame, conf=0.22, imgsz=512, verbose=False)
+                head_results = self.head_model(frame, conf=0.24, imgsz=512, verbose=False)
             head_detections = self._parse_results(head_results)
+
+            # Fuse RT-DETR posture predictions (rtdetr-custom.pt) with head detections if body model exists
+            if self.body_model and head_detections:
+                try:
+                    with torch.inference_mode():
+                        body_results = self.body_model(frame, conf=0.24, verbose=False)
+                    body_dets = self._parse_results(body_results)
+                    sitting_boxes = [b["bbox"] for b in body_dets if b.get("class_id") == 0]
+                    standing_boxes = [b["bbox"] for b in body_dets if b.get("class_id") == 1]
+                    
+                    for hd in head_detections:
+                        hb = hd["bbox"]
+                        cx, cy = (hb[0] + hb[2]) / 2.0, (hb[1] + hb[3]) / 2.0
+                        # Check if head center lies inside a sitting RT-DETR body box
+                        is_sitting = any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in sitting_boxes)
+                        is_standing = any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in standing_boxes)
+                        
+                        if is_sitting:
+                            hd["class_id"] = 0 # Explicit Sitting from RT-DETR
+                        elif is_standing:
+                            hd["class_id"] = 1 # Explicit Standing from RT-DETR
+                except Exception as e:
+                    logger.debug(f"RT-DETR posture fusion error: {e}")
 
         if head_detections:
             for hd in head_detections:
