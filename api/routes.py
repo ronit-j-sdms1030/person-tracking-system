@@ -118,8 +118,8 @@ async def upload_cameras(
             dest = f"data/sample_videos/{file.filename}"
 
             with open(dest, "wb") as f:
-                content = await file.read()
-                f.write(content)
+                while chunk := await file.read(1024 * 1024):
+                    f.write(chunk)
 
             # Add camera to config (saves to site_config.yaml)
             cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role)

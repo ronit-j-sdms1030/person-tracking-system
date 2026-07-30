@@ -387,19 +387,33 @@ async function uploadCameras() {
       formData.append('capacity_standing', parseInt(standingCapEl.value));
   }
 
+  const uploadBtn = document.querySelector('.upload-panel button');
+  if (uploadBtn) {
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "⏳ Uploading Video Feeds...";
+  }
+
   try {
       const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`Server returned HTTP ${res.status}`);
       const result = await res.json();
       
-      alert(`✅ Added ${result.cameras_added.length} camera(s). Processing started — check the dashboard for live updates!`);
+      alert(`✅ Successfully added ${result.cameras_added.length} camera feed(s)! Processing started.`);
       
-      // Refresh video streams to ensure they reconnect after a stale upload
+      // Refresh video stream feeds
       setTimeout(() => {
-          document.getElementById('vid-cam_door_1').src = document.getElementById('vid-cam_door_1').dataset.src + "?t=" + new Date().getTime();
-          document.getElementById('vid-cam_room_1').src = document.getElementById('vid-cam_room_1').dataset.src + "?t=" + new Date().getTime();
+          const v1 = document.getElementById('vid-cam_door_1');
+          const v2 = document.getElementById('vid-cam_room_1');
+          if (v1 && v1.dataset.src) v1.src = v1.dataset.src + "?t=" + new Date().getTime();
+          if (v2 && v2.dataset.src) v2.src = v2.dataset.src + "?t=" + new Date().getTime();
       }, 500);
   } catch (error) {
-      alert(`Error uploading cameras: ${error}`);
+      alert(`⚠️ Video Upload Notice: ${error.message || error}`);
+  } finally {
+      if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = "Upload & Add";
+      }
   }
 }
 
