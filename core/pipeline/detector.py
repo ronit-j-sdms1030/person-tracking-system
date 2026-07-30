@@ -37,20 +37,26 @@ class DetResults:
         return DetResults(self.xyxy[idx], self.conf[idx], self.cls[idx])
 
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.50):
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.60):
         self.conf_thresh = conf_thresh
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.head_model = None
         self.body_model = None
         self.is_fallback = False
 
-        # 1. Primary Model: YOLOH Model (yoloh.pt from yoloh_model.zip) for primary headcount & head tracking
-        if os.path.exists("yoloh.pt"):
+        # 1. Primary Model: RT-DETR Model (rtdetr_head.pt / yoloh.pt / rtdetr-custom.pt / rtdetr-l.pt)
+        if os.path.exists("rtdetr_head.pt"):
+            logger.info("Loading Primary Model: rtdetr_head.pt (RT-DETR)")
+            self.body_model = RTDETR("rtdetr_head.pt")
+        elif os.path.exists("yoloh.pt"):
             logger.info("Loading Primary Model: yoloh.pt (RT-DETR YOLOH)")
             self.body_model = RTDETR("yoloh.pt")
         elif os.path.exists("rtdetr-custom.pt"):
             logger.info("Loading Primary Headcount Model: rtdetr-custom.pt (RT-DETR)")
             self.body_model = RTDETR("rtdetr-custom.pt")
+        elif os.path.exists("rtdetr-l.pt"):
+            logger.info("Loading Primary Headcount Model: rtdetr-l.pt (RT-DETR)")
+            self.body_model = RTDETR("rtdetr-l.pt")
         else:
             head_model_path = "yolov8m-head.pt"
             if not os.path.exists(head_model_path):
@@ -135,17 +141,15 @@ class Detector:
                             "class_id": 0,
                             "track_id": i + 1
                         })
-        # 1. Primary Head Detection Model: RT-DETR Head Model (retr detr head / rtdetr-custom.pt)
-        primary_dets = []
-        # 1. Primary Head Detection Model: YOLOH Model (yoloh.pt / rtdetr-custom.pt)
+        # 1. Primary Head Detection Model: RT-DETR Head Model (rtdetr_head.pt / yoloh.pt / rtdetr-custom.pt)
         primary_dets = []
         if self.body_model:
             try:
                 with torch.inference_mode():
                     if track:
-                        results = self.body_model.track(frame, conf=0.66, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
+                        results = self.body_model.track(frame, conf=0.60, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                     else:
-                        results = self.body_model(frame, conf=0.66, imgsz=640, verbose=False)
+                        results = self.body_model(frame, conf=0.60, imgsz=640, verbose=False)
                 primary_dets = self._parse_results(results)
             except Exception as e:
                 logger.warning(f"Primary head detection error, falling back to YOLO: {e}")
@@ -154,9 +158,9 @@ class Detector:
         if not primary_dets and self.head_model:
             with torch.inference_mode():
                 if track:
-                    head_results = self.head_model.track(frame, conf=0.66, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
+                    head_results = self.head_model.track(frame, conf=0.60, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                 else:
-                    head_results = self.head_model(frame, conf=0.66, imgsz=640, verbose=False)
+                    head_results = self.head_model(frame, conf=0.60, imgsz=640, verbose=False)
             primary_dets = self._parse_results(head_results)
 
         if primary_dets:
@@ -167,7 +171,7 @@ class Detector:
             if getattr(self, "sitting_model", None) is not None:
                 try:
                     with torch.inference_mode():
-                        sit_res = self.sitting_model(frame, conf=0.66, verbose=False)
+                        sit_res = self.sitting_model(frame, conf=0.60, verbose=False)
                     sit_dets = self._parse_results(sit_res)
                     sit_boxes = [s["bbox"] for s in sit_dets if s.get("class_id") == 0]
 
