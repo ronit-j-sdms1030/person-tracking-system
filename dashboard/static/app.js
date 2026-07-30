@@ -63,26 +63,6 @@ function initTrendCharts() {
     if (!cam2TrendChart) cam2TrendChart = createSingleChart('cam2TrendChart', '#38BDF8', 'rgba(56, 189, 248, 0.12)');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initTrendCharts();
-    if (localStorage.getItem('wizard_completed') !== 'true') {
-        const wizard = document.getElementById('initial-setup-wizard');
-        if (wizard) wizard.style.display = 'block';
-
-        const selectBar = document.getElementById('cam-select-bar');
-        const grid = document.getElementById('cam-grid');
-        const summary = document.getElementById('summary-bar');
-        const analytics = document.getElementById('analytics-panel');
-        const upload = document.querySelector('.upload-panel');
-        
-        if (selectBar) selectBar.style.display = 'none';
-        if (grid) grid.style.display = 'none';
-        if (summary) summary.style.display = 'none';
-        if (analytics) analytics.style.display = 'none';
-        if (upload) upload.style.display = 'none';
-    }
-});
-
 let lastRecordedMinute = null;
 let cam1Samples = [];
 let cam2Samples = [];
@@ -219,21 +199,107 @@ function renderZone(zoneData) {
         if (elStandingRem) elStandingRem.textContent = standingRem;
     }
 
-    // Update summary bottom bar total metrics
-    const totalOccEl = document.getElementById('s-total-occupancy');
-    if (totalOccEl) totalOccEl.textContent = 'total ' + present;
-    const totalEntEl = document.getElementById('s-total-entered');
-    if (totalEntEl) totalEntEl.textContent = 'entered ' + entered;
+    // Update summary bottom bar
+    document.getElementById('s-c1-present').textContent = present;
+    document.getElementById('s-c1-remaining').textContent = remaining;
+    document.getElementById('s-c2-present').textContent = present;
+    document.getElementById('s-c2-remaining').textContent = remaining;
+    
+    document.getElementById('s-total-occupancy').textContent = 'total ' + present;
+    document.getElementById('s-total-entered').textContent = 'entered ' + entered;
 
+    // Render Interactive Seating Plan Map
+    const seatGrid = document.getElementById('seat-grid');
+    const seatSummary = document.getElementById('seat-plan-summary');
+    const seatProgressBar = document.getElementById('seat-progress-bar');
+    
+    if (seatGrid) {
+        const sittingCount = zoneData.sitting_count || 0;
+        const totalSeats = sittingMax;
+        const pct = Math.round(Math.min(100, (sittingCount / totalSeats) * 100));
+        
+        if (seatSummary) seatSummary.textContent = `${sittingCount} / ${totalSeats} Seats Occupied (${pct}%)`;
+        if (seatProgressBar) seatProgressBar.style.width = `${pct}%`;
+        
+        // Detect active video scene type to dynamically adapt seating layout map
+        const activeCard = document.querySelector('.cam-card:not([style*="display: none"])');
+        const activeCamTag = activeCard ? activeCard.querySelector('.caption-tag') : null;
+        const activeCamText = activeCamTag ? activeCamTag.textContent.toLowerCase() : '';
+        const activeVidSrc = activeCard && activeCard.querySelector('img') ? (activeCard.querySelector('img').src || '').toLowerCase() : '';
 
+        let zones = [];
+        if (activeVidSrc.includes('bus') || activeCamText.includes('bus')) {
+            const sideCap = Math.max(1, Math.floor(totalSeats * 0.4));
+            zones = [
+                { name: "🚌 Left Aisle Seats", prefix: "L-Seat", count: sideCap },
+                { name: "🚌 Right Aisle Seats", prefix: "R-Seat", count: sideCap },
+                { name: "🚌 Rear Bench Seats", prefix: "Rear", count: Math.max(0, totalSeats - 2 * sideCap) }
+            ];
+        } else if (activeVidSrc.includes('university') || activeVidSrc.includes('lecture') || activeCamText.includes('classroom')) {
+            const rowCap = Math.max(1, Math.floor(totalSeats * 0.35));
+            zones = [
+                { name: "🎓 Front Tier Row", prefix: "Front", count: rowCap },
+                { name: "🎓 Middle Tier Row", prefix: "Mid", count: rowCap },
+                { name: "🎓 Back Tier Row", prefix: "Back", count: Math.max(0, totalSeats - 2 * rowCap) }
+            ];
+        } else if (activeVidSrc.includes('metro') || activeCamText.includes('metro')) {
+            const benchCap = Math.max(1, Math.floor(totalSeats * 0.5));
+            zones = [
+                { name: "🚆 Bench A (Left)", prefix: "BenchA", count: benchCap },
+                { name: "🚆 Bench B (Right)", prefix: "BenchB", count: Math.max(0, totalSeats - benchCap) }
+            ];
+        } else {
+            zones = [
+                { name: "🛋️ Main Lounge Sofa", prefix: "Sofa", count: 3 },
+                { name: "🪑 Foreground Lounge Chairs", prefix: "Chair", count: 2 },
+                { name: "💻 Workstation Desks", prefix: "Desk", count: Math.max(0, totalSeats - 5) }
+            ];
+        }
+
+        let seatCounter = 1;
+        let layoutHTML = '';
+
+        zones.forEach(z => {
+            if (z.count <= 0) return;
+            layoutHTML += `
+                <div style="grid-column: 1 / -1; margin-top:8px; margin-bottom:2px;">
+                    <div style="font-family:'Space Grotesk',sans-serif; font-size:12.5px; font-weight:700; color:var(--text); opacity:0.9;">${z.name}</div>
+                </div>`;
+                
+            for (let k = 1; k <= z.count; k++) {
+                const currentSeatIdx = seatCounter;
+                const isOccupied = currentSeatIdx <= sittingCount;
+                const seatLabel = `${z.prefix}-${k}`;
+                seatCounter++;
+
+                if (isOccupied) {
+                    layoutHTML += `
+                        <div class="seat-block occupied" style="background:linear-gradient(135deg, rgba(168,85,247,0.22), rgba(99,102,241,0.18)); border:1px solid rgba(168,85,247,0.7); border-radius:10px; padding:12px 8px; text-align:center; box-shadow:0 4px 14px rgba(168,85,247,0.18); transition:all 0.3s ease;">
+                            <div style="font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:700; color:#E9D5FF; letter-spacing:0.02em;">${seatLabel}</div>
+                            <div style="display:inline-flex; align-items:center; gap:4px; margin-top:5px; background:rgba(168,85,247,0.3); border:1px solid rgba(168,85,247,0.5); border-radius:12px; padding:2px 8px;">
+                                <span style="width:5px; height:5px; border-radius:50%; background:#C084FC; display:inline-block;"></span>
+                                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:700; color:#F3E8FF; text-transform:uppercase;">BUSY</span>
+                            </div>
+                        </div>`;
+                } else {
+                    layoutHTML += `
+                        <div class="seat-block vacant" style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:10px; padding:12px 8px; text-align:center; transition:all 0.3s ease;">
+                            <div style="font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:600; color:var(--muted); letter-spacing:0.02em;">${seatLabel}</div>
+                            <div style="display:inline-flex; align-items:center; gap:4px; margin-top:5px; background:rgba(255,255,255,0.04); border:1px solid var(--panel-border); border-radius:12px; padding:2px 8px;">
+                                <span style="width:5px; height:5px; border-radius:50%; background:var(--muted); opacity:0.5; display:inline-block;"></span>
+                                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:600; color:var(--muted); text-transform:uppercase;">OPEN</span>
+                            </div>
+                        </div>`;
+                }
+            }
+        });
+
+        seatGrid.innerHTML = layoutHTML;
+    }
 }
 
 function handleInitialState(data) {
     if (data.main_floor) {
-        if (localStorage.getItem('wizard_completed') === 'true' && data.main_floor.cameras && data.main_floor.cameras.length > 0) {
-            const savedCount = parseInt(localStorage.getItem('configured_camera_count')) || data.main_floor.cameras.length;
-            revealDashboardPanels(savedCount);
-        }
         renderZone(data.main_floor);
     }
 }
@@ -432,39 +498,6 @@ async function resetData() {
     try {
         const res = await fetch('/reset', { method: 'POST' });
         if (res.ok) {
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            // Reset JS state variables
-            maxPeakHeadcount = 0;
-            totalHeadcountSum = 0;
-            totalSampleCount = 0;
-            cam1Samples = [];
-            cam2Samples = [];
-            peakTimeRecorded = "--:--";
-
-            // Reset DOM analytics metrics immediately
-            const peakEl = document.getElementById('peak-headcount-val');
-            if (peakEl) peakEl.textContent = '0';
-            const avgEl = document.getElementById('avg-headcount-val');
-            if (avgEl) avgEl.textContent = '0.0';
-            const utilEl = document.getElementById('utilization-rate-val');
-            if (utilEl) utilEl.textContent = '0%';
-            const timeEl = document.getElementById('peak-time-val');
-            if (timeEl) timeEl.textContent = '--:--';
-
-            // Reset Chart.js datasets
-            if (cam1TrendChart) {
-                cam1TrendChart.data.labels = [];
-                cam1TrendChart.data.datasets[0].data = [];
-                cam1TrendChart.update();
-            }
-            if (cam2TrendChart) {
-                cam2TrendChart.data.labels = [];
-                cam2TrendChart.data.datasets[0].data = [];
-                cam2TrendChart.update();
-            }
-
             window.location.reload();
         }
     } catch (e) {
@@ -606,6 +639,7 @@ async function submitWizardCameras() {
             alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
             if (typeof loadCustomCamNames === 'function') loadCustomCamNames();
             revealDashboardPanels(result.cameras_added.length);
+            selectCam('both', document.querySelectorAll('.cam-select button')[wizardSelectedCount]);
         }
     } catch(e) {
         alert(`Notice: ${e}`);
@@ -618,10 +652,6 @@ async function submitWizardCameras() {
 }
 
 function revealDashboardPanels(cameraCount) {
-    const count = cameraCount || 1;
-    localStorage.setItem('wizard_completed', 'true');
-    localStorage.setItem('configured_camera_count', count);
-
     const wizard = document.getElementById('initial-setup-wizard');
     if (wizard) wizard.style.display = 'none';
 
@@ -629,60 +659,26 @@ function revealDashboardPanels(cameraCount) {
     const grid = document.getElementById('cam-grid');
     const summary = document.getElementById('summary-bar');
     const analytics = document.getElementById('analytics-panel');
-    const upload = document.querySelector('.upload-panel');
     
     if (selectBar) selectBar.style.display = 'flex';
     if (grid) grid.style.display = 'grid';
     if (summary) summary.style.display = 'flex';
     if (analytics) analytics.style.display = 'block';
-    if (upload) upload.style.display = 'block';
 
     // Build single-camera view navigation buttons for all configured cameras
     const selectDiv = document.getElementById('cam-select');
     if (selectDiv) {
         let navHTML = '';
+        const count = cameraCount || 2;
         for (let i = 1; i <= count; i++) {
-            navHTML += `<button class="${i === 1 && count === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
+            navHTML += `<button class="${i === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
         }
-        if (count > 1) {
-            navHTML += `<button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
-        }
+        navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
         selectDiv.innerHTML = navHTML;
-    }
-
-    if (count === 1) {
-        selectCam('1', document.querySelectorAll('.cam-select button')[0]);
-    } else {
-        const buttons = document.querySelectorAll('.cam-select button');
-        const bothBtn = buttons[buttons.length - 1];
-        selectCam('both', bothBtn);
     }
 }
 
-async function launchDemoSampleFeeds() {
-    const count = wizardSelectedCount || 1;
-    try {
-        const formData = new FormData();
-        formData.append('slots', 'cam_door_1');
-        formData.append('roles', 'both');
-        formData.append('cam_capacities', 25);
-        if (count > 1) {
-            formData.append('slots', 'cam_room_1');
-            formData.append('roles', 'posture');
-            formData.append('cam_capacities', 25);
-        }
-
-        const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
-        if (res.ok) {
-            revealDashboardPanels(count);
-            setTimeout(() => {
-                const v1 = document.getElementById('vid-cam_door_1');
-                const v2 = document.getElementById('vid-cam_room_1');
-                if (v1 && v1.dataset.src) v1.src = v1.dataset.src + '?t=' + Date.now();
-                if (v2 && v2.dataset.src) v2.src = v2.dataset.src + '?t=' + Date.now();
-            }, 500);
-        }
-    } catch(e) {
-        revealDashboardPanels(count);
-    }
+function launchDemoSampleFeeds() {
+    revealDashboardPanels(2);
+    selectCam('both', document.querySelectorAll('.cam-select button')[2]);
 }

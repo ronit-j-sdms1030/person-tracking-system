@@ -29,14 +29,30 @@ def reset_data():
     if vision_runner:
         vision_runner.stop()
 
-    # 2. Reset site_config.yaml to empty cameras list
-    baseline_yaml = """site_id: stark_demo_site
+    # 2. Reset site_config.yaml to default sample video feeds
+    sample_office = "data/sample_videos/VIDEO-2026-07-28-15-36-24.mp4"
+    sample_bus = "data/sample_videos/CCTV_footage_school_bus_students_202607281532.mp4"
+    office_src = sample_office if os.path.exists(sample_office) else "data/sample_videos/VIDEO-2026-07-28-15-36-24 (1).mp4"
+    bus_src = sample_bus if os.path.exists(sample_bus) else "data/sample_videos/test.mp4"
+
+    baseline_yaml = f"""site_id: stark_demo_site
 zones:
 - zone_id: main_floor
   capacity_max: 25
   capacity_sitting_max: 15
   capacity_standing_max: 10
-  cameras: []
+  cameras:
+  - camera_id: cam_door_1
+    adapter: file
+    source: {office_src}
+    role: both
+    frame_skip: 1
+    cooldown_seconds: 2.0
+  - camera_id: cam_room_1
+    adapter: file
+    source: {bus_src}
+    role: posture
+    frame_skip: 1
 """
     os.makedirs("config", exist_ok=True)
     with open("config/site_config.yaml", "w") as f:
@@ -45,11 +61,13 @@ zones:
     # 3. Reload config_loader & reset state manager (clears queue & metrics)
     config_loader.load_and_validate()
     state_manager.camera_to_zone.clear()
+    state_manager.camera_to_zone["cam_door_1"] = "main_floor"
+    state_manager.camera_to_zone["cam_room_1"] = "main_floor"
     state_manager.reset_zone("main_floor")
 
-    # 4. Restart vision runner with empty config
+    # 4. Restart vision runner cleanly with baseline configuration
     if vision_runner:
-        vision_runner.cameras_config = []
+        vision_runner.cameras_config = config_loader.raw_data["zones"][0]["cameras"]
         vision_runner.start()
     
     return {"status": "ok", "message": "Hard reset completed successfully"}

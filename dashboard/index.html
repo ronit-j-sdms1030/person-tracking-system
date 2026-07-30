@@ -247,7 +247,7 @@
   </header>
 
   <!-- Initial Camera Setup Wizard Hero Modal -->
-  <div id="initial-setup-wizard" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:32px; margin-bottom:25px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.35); transition:all 0.3s ease;">
+  <div id="initial-setup-wizard" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:32px; margin-bottom:25px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.35); transition:all 0.3s ease;">
     <div style="font-size:42px; margin-bottom:12px;">🎥</div>
     <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin:0 0 8px 0; color:var(--text);">Multi-Camera System Configuration</h2>
     <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitor    <!-- Step 1: Uncapped Camera Count Selection Provisions -->
@@ -288,7 +288,7 @@
     </div>
   </div>
 
-  <div class="cam-select-bar" id="cam-select-bar" style="display:none;">
+  <div class="cam-select-bar" id="cam-select-bar">
     <div class="cam-select" id="cam-select">
       <button onclick="selectCam('1', this)">Cam 1</button>
       <button onclick="selectCam('2', this)">Cam 2</button>
@@ -307,7 +307,7 @@
     </div>
   </div>
 
-  <div class="cam-grid cols-2" id="cam-grid" style="display:none;">
+  <div class="cam-grid cols-2" id="cam-grid">
 
     <div class="cam-card" data-cam="1">
       <div class="cam-video-col">
@@ -385,7 +385,7 @@
 
   </div>
 
-  <div class="summary-bar" id="summary-bar" style="display:none;">
+  <div class="summary-bar" id="summary-bar">
     <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">0</b> present · <b id="s-c1-remaining">25</b> remain</div>
     <div class="divider" id="sum-div" style="display:flex;"></div>
     <div class="grp" id="sum-cam2" style="display:flex;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
@@ -395,7 +395,7 @@
   </div>
 
   <!-- Real-Time Peak Trends & Analytics Chart Panel (2 Graphs Side-by-Side) -->
-  <div class="analytics-panel" id="analytics-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+  <div class="analytics-panel" id="analytics-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
       <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
         <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Per-Camera Minute-by-Minute Occupancy Analytics</h3>
@@ -434,9 +434,28 @@
     </div>
   </div>
 
+  <!-- Interactive Seating Plan & Seat Occupancy Map -->
+  <div class="seating-plan-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; display:flex; align-items:center; gap:8px;">
+        <span>Real-Time Seat Layout & Occupancy Blocks</span>
+      </h3>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--purple); background:var(--chip-purple-bg); padding:4px 12px; border-radius:12px; border:1px solid var(--panel-border);" id="seat-plan-summary">
+        0 / 15 Seats Occupied (0%)
+      </span>
+    </div>
+    
+    <!-- Seat Visual Progress Bar -->
+    <div style="width:100%; height:8px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin-bottom:16px; border:1px solid var(--panel-border);">
+      <div id="seat-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #A855F7, #3B82F6); transition:width 0.4s ease;"></div>
+    </div>
+    
+    <!-- Visual Seat Map Grid -->
+    <div id="seat-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:10px;"></div>
+  </div>
 
   <!-- Upload Panel for dynamic camera addition -->
-  <div class="upload-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
+  <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
     <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
     <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
     <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
