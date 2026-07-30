@@ -57,6 +57,32 @@ zones:
 def get_cameras_status():
     return state_manager.get_cameras_status()
 
+@router.get("/export-csv")
+def export_csv_report():
+    import csv, io, json
+    from fastapi.responses import Response
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Timestamp", "Camera ID", "Event Type", "Track ID", "Zone ID"])
+    
+    if os.path.exists("logs/events.jsonl"):
+        with open("logs/events.jsonl", "r") as f:
+            for line in f:
+                try:
+                    data = json.loads(line.strip())
+                    ts = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data.get("timestamp", time.time())))
+                    writer.writerow([ts, data.get("camera_id", "cam_1"), data.get("event", "count_update"), data.get("track_id", "N/A"), "main_floor"])
+                except Exception:
+                    pass
+    
+    output.seek(0)
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=headcount_audit_report.csv"}
+    )
+
 @router.post("/upload-cameras")
 async def upload_cameras(
     files: List[UploadFile],

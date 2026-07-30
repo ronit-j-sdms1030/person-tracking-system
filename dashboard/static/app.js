@@ -16,6 +16,72 @@ function syncTotalCap() {
     if (totalEl) totalEl.value = sitVal + standVal;
 }
 
+let trendChart = null;
+let maxPeakHeadcount = 0;
+
+function initTrendChart() {
+    const ctx = document.getElementById('occupancyTrendChart');
+    if (!ctx) return;
+    
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Present Headcount',
+                data: [],
+                borderColor: '#3ECF8E',
+                backgroundColor: 'rgba(62, 207, 142, 0.12)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#8890A0', font: { family: 'JetBrains Mono', size: 10 } }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#8890A0', font: { family: 'JetBrains Mono', size: 10 } }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+function updateTrendChart(present) {
+    if (!trendChart) initTrendChart();
+    if (!trendChart) return;
+    
+    if (present > maxPeakHeadcount) {
+        maxPeakHeadcount = present;
+        const peakEl = document.getElementById('peak-headcount-val');
+        if (peakEl) peakEl.textContent = maxPeakHeadcount;
+    }
+    
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    if (trendChart.data.labels.length > 25) {
+        trendChart.data.labels.shift();
+        trendChart.data.datasets[0].data.shift();
+    }
+    
+    trendChart.data.labels.push(nowStr);
+    trendChart.data.datasets[0].data.push(present);
+    trendChart.update('none');
+}
+
 function renderZone(zoneData) {
     if (zoneData.zone_id !== 'main_floor') return;
     window.lastZoneData = zoneData;
@@ -26,6 +92,8 @@ function renderZone(zoneData) {
     const remaining = zoneData.remaining_capacity;
     const entered = zoneData.entered_today;
     const exited = zoneData.exited_today;
+
+    updateTrendChart(present);
 
     // Loop through cameras to update their specific stats
     if (zoneData.cameras) {
