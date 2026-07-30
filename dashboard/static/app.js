@@ -646,7 +646,9 @@ async function submitWizardCameras() {
 }
 
 function revealDashboardPanels(cameraCount) {
-    document.getElementById('initial-setup-wizard').style.display = 'none';
+    const wizard = document.getElementById('initial-setup-wizard');
+    if (wizard) wizard.style.display = 'none';
+
     const selectBar = document.getElementById('cam-select-bar');
     const grid = document.getElementById('cam-grid');
     const summary = document.getElementById('summary-bar');

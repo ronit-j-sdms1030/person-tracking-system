@@ -410,8 +410,10 @@
   }
 
   function selectCam(which, btn){
-    document.querySelectorAll('.cam-select button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    if (btn && btn.classList) {
+      document.querySelectorAll('.cam-select button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
 
     const cam1 = document.querySelector('[data-cam="1"]');
     const cam2 = document.querySelector('[data-cam="2"]');
@@ -421,20 +423,30 @@
     const grid = document.getElementById('cam-grid');
 
     if(which === '1'){
-      cam1.style.display = ''; cam2.style.display = 'none';
-      sumCam1.style.display = ''; sumCam2.style.display = 'none'; sumDiv.style.display = 'none';
+      if (cam1) cam1.style.display = ''; 
+      if (cam2) cam2.style.display = 'none';
+      if (sumCam1) sumCam1.style.display = ''; 
+      if (sumCam2) sumCam2.style.display = 'none'; 
+      if (sumDiv) sumDiv.style.display = 'none';
       if (grid) grid.className = 'cam-grid cols-1';
     } else if(which === '2'){
-      cam1.style.display = 'none'; cam2.style.display = '';
-      sumCam1.style.display = 'none'; sumCam2.style.display = ''; sumDiv.style.display = 'none';
+      if (cam1) cam1.style.display = 'none'; 
+      if (cam2) cam2.style.display = '';
+      if (sumCam1) sumCam1.style.display = 'none'; 
+      if (sumCam2) sumCam2.style.display = ''; 
+      if (sumDiv) sumDiv.style.display = 'none';
       if (grid) grid.className = 'cam-grid cols-1';
     } else {
-      cam1.style.display = ''; cam2.style.display = '';
-      sumCam1.style.display = ''; sumCam2.style.display = ''; sumDiv.style.display = 'flex';
-      const selectedCol = document.getElementById('grid-cols-select').value;
+      if (cam1) cam1.style.display = ''; 
+      if (cam2) cam2.style.display = '';
+      if (sumCam1) sumCam1.style.display = ''; 
+      if (sumCam2) sumCam2.style.display = ''; 
+      if (sumDiv) sumDiv.style.display = 'flex';
+      const colSelect = document.getElementById('grid-cols-select');
+      const selectedCol = colSelect ? colSelect.value : 'cols-2';
       if (grid) grid.className = `cam-grid ${selectedCol}`;
     }
-    if (window.lastZoneData) renderZone(window.lastZoneData);
+    if (window.lastZoneData && typeof renderZone === 'function') renderZone(window.lastZoneData);
   }
   
   // Set video stream sources after page load to prevent infinite loading spinner
