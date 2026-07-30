@@ -590,18 +590,12 @@ function configureWizardSlots(count) {
     for (let i = 1; i <= count; i++) {
         const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
         html += `
-            <div style="background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--text);">Camera ${i} Slot</span>
                     <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); font-weight:500;">(${slotName})</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted);">Cap:</span>
-                        <input type="number" id="wizard-cap-${i}" value="25" min="1" max="500" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:4px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px; width:55px; outline:none;">
-                    </div>
-                    <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
-                </div>
+                <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
             </div>`;
     }
     if (inputsDiv) inputsDiv.innerHTML = html;
@@ -610,14 +604,9 @@ function configureWizardSlots(count) {
 async function submitWizardCameras() {
     const formData = new FormData();
     let fileAdded = false;
-    let maxCapInput = 25;
     
     for (let i = 1; i <= wizardSelectedCount; i++) {
         const fileInput = document.getElementById(`wizard-file-${i}`);
-        const capInput = document.getElementById(`wizard-cap-${i}`);
-        if (capInput && capInput.value) {
-            maxCapInput = Math.max(maxCapInput, parseInt(capInput.value));
-        }
         if (fileInput && fileInput.files.length > 0) {
             const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
             formData.append('files', fileInput.files[0]);
@@ -627,8 +616,6 @@ async function submitWizardCameras() {
         }
     }
     
-    formData.append('capacity', maxCapInput);
-
     if (!fileAdded) {
         alert("Please choose a video file for your camera slots or click '⚡ Launch Sample Feeds'!");
         return;
