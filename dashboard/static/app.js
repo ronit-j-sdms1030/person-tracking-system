@@ -181,9 +181,9 @@ function ensureCameraCardsExist(cameras) {
           <div class="header">
             <h2>CAM ${num} <span class="tag" id="c${num}-tag" onclick="editCamName(${num})" style="cursor:pointer;" title="Click to set camera name">${tagName}</span><button onclick="editCamName(${num})" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:11px; margin-left:4px; padding:0;" title="Rename Camera">edit</button></h2>
             <div style="display:flex; align-items:center; gap:12px;">
-              <button onclick="deleteCamera('${camId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:14px;" title="Delete Feed">Delete</button>
-              <div class="status-indicator" id="c${num}-status">
-                <div class="dot"></div>
+              <button onclick="deleteCamera('${camId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:13px; font-family:'JetBrains Mono',monospace; font-weight:600;" title="Delete Feed">Delete</button>
+              <div class="cam-live" id="c${num}-status">
+                <i></i>
                 <span>Live</span>
               </div>
             </div>
