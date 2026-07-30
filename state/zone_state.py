@@ -116,18 +116,14 @@ class ZoneState:
         track_id = event.get("track_id")
         posture = event.get("posture")
         
-        # Track posture changes for the specific camera
-        if posture and cam_id in self.camera_stats and "sitting" in self.camera_stats[cam_id]:
-            # This is a naive increment; in reality you'd track the track_id's state and delta it.
-            # But for simple stats/demo matching Claude's logic, we will just recount below in to_dict 
-            pass
-        
-        if track_id is not None:
+        # Namespace track_id with camera_id to prevent multi-camera ID collisions
+        if track_id is not None and cam_id:
+            scoped_track_id = f"{cam_id}_{track_id}"
             if ev_type == "exited":
-                if track_id in self.active_tracks:
-                    del self.active_tracks[track_id]
+                if scoped_track_id in self.active_tracks:
+                    del self.active_tracks[scoped_track_id]
             else:
-                self.active_tracks[track_id] = {
+                self.active_tracks[scoped_track_id] = {
                     "timestamp": current_time,
                     "posture": posture if posture else "unknown",
                     "camera_id": cam_id

@@ -130,85 +130,141 @@ function updateTrendCharts(c1Count, c2Count, totalPresent, cap) {
     }
 }
 
+function ensureCameraCardsExist(cameras) {
+    if (!cameras || cameras.length === 0) return;
+    const grid = document.getElementById('cam-grid');
+    const selectDiv = document.getElementById('cam-select');
+    const summaryBar = document.getElementById('summary-bar');
+    if (!grid) return;
+
+    // 1. Ensure camera select bar buttons exist for all cameras
+    if (selectDiv && selectDiv.querySelectorAll('button').length < cameras.length + 1) {
+        let navHTML = '';
+        cameras.forEach((cam, i) => {
+            const num = i + 1;
+            navHTML += `<button onclick="selectCam('${num}', this)">Cam ${num}</button>`;
+        });
+        navHTML += `<button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        selectDiv.innerHTML = navHTML;
+    }
+
+    // 2. Ensure a camera card exists in cam-grid for each camera
+    cameras.forEach((cam, i) => {
+        const num = i + 1;
+        const camId = cam.camera_id;
+        let card = document.querySelector(`.cam-card[data-cam="${num}"]`) || document.querySelector(`.cam-card[data-cam-id="${camId}"]`);
+        if (!card) {
+            const savedName = localStorage.getItem(`cam_${num}_name`) || '';
+            const tagName = savedName ? savedName : 'Set Name';
+            const captionText = savedName ? `${savedName} view` : 'view';
+
+            card = document.createElement('div');
+            card.className = 'cam-card';
+            card.setAttribute('data-cam', String(num));
+            card.setAttribute('data-cam-id', camId);
+            card.innerHTML = `
+      <div class="cam-video-col">
+        <div class="cam-head">
+          <div class="header">
+            <h2>CAM ${num} <span class="tag" id="c${num}-tag" onclick="editCamName(${num})" style="cursor:pointer;" title="Click to set camera name">${tagName}</span><button onclick="editCamName(${num})" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:11px; margin-left:4px; padding:0;" title="Rename Camera">edit</button></h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button onclick="deleteCamera('${camId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:14px;" title="Delete Feed">Delete</button>
+              <div class="status-indicator" id="c${num}-status">
+                <div class="dot"></div>
+                <span>Live</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="video-panel">
+          <div class="caption-tag" id="c${num}-caption">${captionText}</div>
+          <img id="vid-${camId}" src="/video_feed/${camId}" data-src="/video_feed/${camId}" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM ${num} feed">
+          <div class="playback-controls">
+            <button onclick="togglePlay('${camId}', this)" class="ctrl-btn" title="Pause">⏸</button>
+            <input type="range" class="seek-bar" id="seek-${camId}" min="0" max="100" value="0" oninput="seekVideo('${camId}', this.value)" title="Scrub Timeline">
+            <button onclick="restartCamera('${camId}')" class="ctrl-btn" title="Restart">↺</button>
+          </div>
+        </div>
+      </div>
+      <div class="stats-col">
+        <div class="stat-grid">
+          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c${num}-cap">25</div><div class="lbl" style="display:flex; align-items:center; justify-content:space-between;"><span>Total cap.</span><button onclick="editCamCapacity('${camId}', ${num})" style="background:none; border:none; color:var(--blue); cursor:pointer; font-size:10px; padding:0; text-decoration:underline;" title="Edit Capacity">edit</button></div></div>
+          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c${num}-present">0</div><div class="lbl">Present</div></div>
+          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c${num}-remaining">25</div><div class="lbl">Remaining</div></div>
+          
+          <div class="chip c${num}-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c${num}-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c${num}-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c${num}-sitting-rem">15</span> rem)</div></div>
+          <div class="chip wide c${num}-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c${num}-standing-rem">10</span> rem)</div><div class="num"><span id="c${num}-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c${num}-standing-rem">10</span></span></div></div>
+        </div>
+      </div>`;
+            grid.appendChild(card);
+        }
+    });
+
+    // 3. Ensure summary bar groups exist for all cameras
+    if (summaryBar && summaryBar.querySelectorAll('.grp').length < cameras.length) {
+        let sumHTML = '';
+        cameras.forEach((cam, i) => {
+            const num = i + 1;
+            sumHTML += `<div class="grp" id="sum-cam${num}">CAM ${num} <b id="s-c${num}-present">0</b> present · <b id="s-c${num}-remaining">25</b> remain</div>`;
+            if (i < cameras.length - 1) {
+                sumHTML += `<div class="divider" id="sum-div-${num}"></div>`;
+            }
+        });
+        sumHTML += `<div class="spacer"></div>`;
+        sumHTML += `<div class="pill" id="s-total-occupancy">total 0</div>`;
+        sumHTML += `<div class="pill" id="s-total-entered" style="display:none;">entered 0</div>`;
+        summaryBar.innerHTML = sumHTML;
+    }
+}
+
 function renderZone(zoneData) {
     if (zoneData.zone_id !== 'main_floor') return;
     window.lastZoneData = zoneData;
 
-    // Both cameras show the zone level aggregated state
+    if (zoneData.cameras && zoneData.cameras.length > 0) {
+        ensureCameraCardsExist(zoneData.cameras);
+    }
+
     const cap = zoneData.capacity_max;
     const present = zoneData.current_occupancy;
     const remaining = zoneData.remaining_capacity;
     const entered = zoneData.entered_today;
-    const exited = zoneData.exited_today;
 
     let c1Count = 0;
     let c2Count = 0;
 
     if (zoneData.cameras) {
-        zoneData.cameras.forEach(cam => {
-            if (cam.camera_id === 'cam_door_1') c1Count = cam.current_occupancy || 0;
-            else if (cam.camera_id === 'cam_room_1') c2Count = cam.current_occupancy || 0;
+        zoneData.cameras.forEach((cam, i) => {
+            const num = i + 1;
+            const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : 0;
+            const camCap = cam.capacity !== undefined ? cam.capacity : cap;
+            const camRemain = Math.max(0, camCap - camPresent);
+
+            if (i === 0) c1Count = camPresent;
+            else if (i === 1) c2Count = camPresent;
+
+            const prefix = `c${num}`;
+            const elCap = document.getElementById(`${prefix}-cap`);
+            const elPresent = document.getElementById(`${prefix}-present`);
+            const elRemaining = document.getElementById(`${prefix}-remaining`);
+
+            if (elCap) elCap.textContent = camCap;
+            if (elPresent) elPresent.textContent = camPresent;
+            if (elRemaining) elRemaining.textContent = camRemain;
+
+            const sumPresent = document.getElementById(`s-${prefix}-present`);
+            const sumRemaining = document.getElementById(`s-${prefix}-remaining`);
+            if (sumPresent) sumPresent.textContent = camPresent;
+            if (sumRemaining) sumRemaining.textContent = camRemain;
         });
     }
 
     updateTrendCharts(c1Count, c2Count, present, cap);
 
-    // Loop through cameras to update their specific stats
-    if (zoneData.cameras) {
-        zoneData.cameras.forEach(cam => {
-            let prefix = null;
-            if (cam.camera_id === 'cam_door_1') prefix = 'c1';
-            else if (cam.camera_id === 'cam_room_1') prefix = 'c2';
-
-            if (prefix) {
-                // Update distinct stats specifically for this camera feed
-                const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : present;
-                const camRemain = Math.max(0, cap - camPresent);
-
-                const elCap = document.getElementById(`${prefix}-cap`);
-                const elPresent = document.getElementById(`${prefix}-present`);
-                const elRemaining = document.getElementById(`${prefix}-remaining`);
-                
-                if (elCap) elCap.textContent = cap;
-                if (elPresent) elPresent.textContent = camPresent;
-                if (elRemaining) elRemaining.textContent = camRemain;
-
-                // Update summary bar elements for this specific camera
-                const sumPresent = document.getElementById(`s-${prefix}-present`);
-                const sumRemaining = document.getElementById(`s-${prefix}-remaining`);
-                if (sumPresent) sumPresent.textContent = camPresent;
-                if (sumRemaining) sumRemaining.textContent = camRemain;
-            }
-        });
-    }
-
-    const sittingMax = zoneData.capacity_sitting_max || 15;
-    const standingMax = zoneData.capacity_standing_max || 10;
-    const sittingRem = zoneData.remaining_sitting_capacity !== undefined ? zoneData.remaining_sitting_capacity : Math.max(0, sittingMax - (zoneData.sitting_count || 0));
-    const standingRem = zoneData.remaining_standing_capacity !== undefined ? zoneData.remaining_standing_capacity : Math.max(0, standingMax - (zoneData.standing_count || 0));
-
-    for (const prefix of ['c1', 'c2']) {
-        const elSittingMax = document.getElementById(`${prefix}-sitting-max`);
-        const elSittingRem = document.getElementById(`${prefix}-sitting-rem`);
-        const elStandingMax = document.getElementById(`${prefix}-standing-max`);
-        const elStandingRem = document.getElementById(`${prefix}-standing-rem`);
-        
-        if (elSittingMax) elSittingMax.textContent = sittingMax;
-        if (elSittingRem) elSittingRem.textContent = sittingRem;
-        if (elStandingMax) elStandingMax.textContent = standingMax;
-        if (elStandingRem) elStandingRem.textContent = standingRem;
-    }
-
-    // Update summary bottom bar
-    document.getElementById('s-c1-present').textContent = present;
-    document.getElementById('s-c1-remaining').textContent = remaining;
-    document.getElementById('s-c2-present').textContent = present;
-    document.getElementById('s-c2-remaining').textContent = remaining;
-    
-    document.getElementById('s-total-occupancy').textContent = 'total ' + present;
-    document.getElementById('s-total-entered').textContent = 'entered ' + entered;
-
-
+    const sTotal = document.getElementById('s-total-occupancy');
+    const sEntered = document.getElementById('s-total-entered');
+    if (sTotal) sTotal.textContent = 'total ' + present;
+    if (sEntered) sEntered.textContent = 'entered ' + entered;
 }
 
 function handleInitialState(data) {
