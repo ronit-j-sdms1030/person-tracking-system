@@ -589,11 +589,12 @@ function configureWizardSlots(count) {
     let html = '';
     for (let i = 1; i <= count; i++) {
         const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
+        const existingName = localStorage.getItem(`cam_${i}_name`) || '';
         html += `
             <div style="background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--text);">Camera ${i} Slot</span>
-                    <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); font-weight:500;">(${slotName})</span>
+                    <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--text);">Camera ${i}</span>
+                    <input type="text" id="wizard-cam-name-${i}" value="${existingName}" placeholder="Enter name (e.g. Lobby)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:3px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px; width:130px; outline:none;">
                 </div>
                 <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
             </div>`;
@@ -607,6 +608,10 @@ async function submitWizardCameras() {
     
     for (let i = 1; i <= wizardSelectedCount; i++) {
         const fileInput = document.getElementById(`wizard-file-${i}`);
+        const nameInput = document.getElementById(`wizard-cam-name-${i}`);
+        if (nameInput && nameInput.value.trim()) {
+            localStorage.setItem(`cam_${i}_name`, nameInput.value.trim());
+        }
         if (fileInput && fileInput.files.length > 0) {
             const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
             formData.append('files', fileInput.files[0]);
@@ -632,6 +637,7 @@ async function submitWizardCameras() {
         if (res.ok) {
             const result = await res.json();
             alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
+            if (typeof loadCustomCamNames === 'function') loadCustomCamNames();
             revealDashboardPanels(result.cameras_added.length);
             selectCam('both', document.querySelectorAll('.cam-select button')[wizardSelectedCount]);
         }

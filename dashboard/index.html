@@ -313,7 +313,7 @@
       <div class="cam-video-col">
         <div class="cam-head">
           <div class="header">
-            <h2>CAM 1 <span class="tag">doorway</span></h2>
+            <h2>CAM 1 <span class="tag" id="c1-tag" onclick="editCamName(1)" style="cursor:pointer;" title="Click to set camera name">Set Name</span><button onclick="editCamName(1)" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; margin-left:4px; padding:0;" title="Rename Camera">✏️</button></h2>
             <div style="display:flex; align-items:center; gap:12px;">
               <button onclick="deleteCamera('cam_door_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
               <div class="status-indicator" id="c1-status">
@@ -324,7 +324,7 @@
           </div>
         </div>
         <div class="video-panel">
-          <div class="caption-tag">doorway view</div>
+          <div class="caption-tag" id="c1-caption">view</div>
           <img id="vid-cam_door_1" src="/video_feed/cam_door_1" data-src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 1 feed">
           <!-- Custom Playback Controls -->
           <div class="playback-controls">
@@ -350,7 +350,7 @@
       <div class="cam-video-col">
         <div class="cam-head">
           <div class="header">
-            <h2>CAM 2 <span class="tag">interior</span></h2>
+            <h2>CAM 2 <span class="tag" id="c2-tag" onclick="editCamName(2)" style="cursor:pointer;" title="Click to set camera name">Set Name</span><button onclick="editCamName(2)" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; margin-left:4px; padding:0;" title="Rename Camera">✏️</button></h2>
             <div style="display:flex; align-items:center; gap:12px;">
               <button onclick="deleteCamera('cam_room_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
               <div class="status-indicator" id="c2-status">
@@ -361,7 +361,7 @@
           </div>
         </div>
         <div class="video-panel">
-          <div class="caption-tag">interior view</div>
+          <div class="caption-tag" id="c2-caption">view</div>
           <img id="vid-cam_room_1" src="/video_feed/cam_room_1" data-src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 2 feed">
           <!-- Custom Playback Controls -->
           <div class="playback-controls">
@@ -525,8 +525,37 @@
     if (window.lastZoneData && typeof renderZone === 'function') renderZone(window.lastZoneData);
   }
   
+  function editCamName(num) {
+    const currentTag = document.getElementById(`c${num}-tag`);
+    const currentName = currentTag ? (currentTag.textContent === 'Set Name' ? '' : currentTag.textContent) : '';
+    const newName = prompt(`Enter custom name for Camera ${num}:`, currentName);
+    if (newName !== null) {
+      const trimmed = newName.trim();
+      if (currentTag) currentTag.textContent = trimmed || 'Set Name';
+      const captionTag = document.getElementById(`c${num}-caption`);
+      if (captionTag) captionTag.textContent = trimmed ? `${trimmed} view` : 'view';
+      localStorage.setItem(`cam_${num}_name`, trimmed);
+    }
+  }
+
+  function loadCustomCamNames() {
+    [1, 2].forEach(num => {
+      const saved = localStorage.getItem(`cam_${num}_name`);
+      const currentTag = document.getElementById(`c${num}-tag`);
+      const captionTag = document.getElementById(`c${num}-caption`);
+      if (saved) {
+        if (currentTag) currentTag.textContent = saved;
+        if (captionTag) captionTag.textContent = `${saved} view`;
+      } else {
+        if (currentTag) currentTag.textContent = 'Set Name';
+        if (captionTag) captionTag.textContent = 'view';
+      }
+    });
+  }
+
   // Set video stream sources after page load to prevent infinite loading spinner
   window.addEventListener('load', () => {
+      loadCustomCamNames();
       document.getElementById('vid-cam_door_1').src = document.getElementById('vid-cam_door_1').dataset.src;
       document.getElementById('vid-cam_room_1').src = document.getElementById('vid-cam_room_1').dataset.src;
   });
