@@ -288,7 +288,7 @@
     </div>
   </div>
 
-  <div class="cam-select-bar" id="cam-select-bar">
+  <div class="cam-select-bar" id="cam-select-bar" style="display:none;">
     <div class="cam-select" id="cam-select">
       <button onclick="selectCam('1', this)">Cam 1</button>
       <button onclick="selectCam('2', this)">Cam 2</button>
@@ -307,7 +307,7 @@
     </div>
   </div>
 
-  <div class="cam-grid cols-2" id="cam-grid">
+  <div class="cam-grid cols-2" id="cam-grid" style="display:none;">
 
     <div class="cam-card" data-cam="1">
       <div class="cam-video-col">
@@ -385,7 +385,7 @@
 
   </div>
 
-  <div class="summary-bar" id="summary-bar">
+  <div class="summary-bar" id="summary-bar" style="display:none;">
     <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">0</b> present · <b id="s-c1-remaining">25</b> remain</div>
     <div class="divider" id="sum-div" style="display:flex;"></div>
     <div class="grp" id="sum-cam2" style="display:flex;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
@@ -395,7 +395,7 @@
   </div>
 
   <!-- Real-Time Peak Trends & Analytics Chart Panel (2 Graphs Side-by-Side) -->
-  <div class="analytics-panel" id="analytics-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+  <div class="analytics-panel" id="analytics-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
       <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
         <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Per-Camera Minute-by-Minute Occupancy Analytics</h3>
@@ -436,7 +436,7 @@
 
 
   <!-- Upload Panel for dynamic camera addition -->
-  <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
+  <div class="upload-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
     <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
     <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
     <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>

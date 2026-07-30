@@ -210,6 +210,9 @@ function renderZone(zoneData) {
 
 function handleInitialState(data) {
     if (data.main_floor) {
+        if (data.main_floor.cameras && data.main_floor.cameras.length > 0) {
+            revealDashboardPanels(data.main_floor.cameras.length);
+        }
         renderZone(data.main_floor);
     }
 }
@@ -621,7 +624,27 @@ function revealDashboardPanels(cameraCount) {
     }
 }
 
-function launchDemoSampleFeeds() {
-    revealDashboardPanels(2);
-    selectCam('both', document.querySelectorAll('.cam-select button')[2]);
+async function launchDemoSampleFeeds() {
+    try {
+        const formData = new FormData();
+        formData.append('slots', 'cam_door_1');
+        formData.append('roles', 'both');
+        formData.append('cam_capacities', 25);
+        formData.append('slots', 'cam_room_1');
+        formData.append('roles', 'posture');
+        formData.append('cam_capacities', 25);
+
+        const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
+        if (res.ok) {
+            revealDashboardPanels(2);
+            setTimeout(() => {
+                const v1 = document.getElementById('vid-cam_door_1');
+                const v2 = document.getElementById('vid-cam_room_1');
+                if (v1 && v1.dataset.src) v1.src = v1.dataset.src + '?t=' + Date.now();
+                if (v2 && v2.dataset.src) v2.src = v2.dataset.src + '?t=' + Date.now();
+            }, 500);
+        }
+    } catch(e) {
+        revealDashboardPanels(2);
+    }
 }
