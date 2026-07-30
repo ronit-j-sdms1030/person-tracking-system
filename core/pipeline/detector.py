@@ -44,8 +44,11 @@ class Detector:
         self.body_model = None
         self.is_fallback = False
 
-        # 1. Primary Model: Custom RT-DETR (rtdetr-custom.pt) for primary headcount
-        if os.path.exists("rtdetr-custom.pt"):
+        # 1. Primary Model: YOLOH Model (yoloh.pt from yoloh_model.zip) for primary headcount & head tracking
+        if os.path.exists("yoloh.pt"):
+            logger.info("Loading Primary Model: yoloh.pt (RT-DETR YOLOH)")
+            self.body_model = RTDETR("yoloh.pt")
+        elif os.path.exists("rtdetr-custom.pt"):
             logger.info("Loading Primary Headcount Model: rtdetr-custom.pt (RT-DETR)")
             self.body_model = RTDETR("rtdetr-custom.pt")
         else:
@@ -138,9 +141,9 @@ class Detector:
             try:
                 with torch.inference_mode():
                     if track:
-                        results = self.body_model.track(frame, conf=0.40, imgsz=800, persist=True, verbose=False, tracker="bytetrack.yaml")
+                        results = self.body_model.track(frame, conf=0.40, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
                     else:
-                        results = self.body_model(frame, conf=0.40, imgsz=800, verbose=False)
+                        results = self.body_model(frame, conf=0.40, imgsz=512, verbose=False)
                 primary_dets = self._parse_results(results)
             except Exception as e:
                 logger.warning(f"RT-DETR primary head detection error, falling back to YOLO: {e}")
@@ -149,9 +152,9 @@ class Detector:
         if not primary_dets and self.head_model:
             with torch.inference_mode():
                 if track:
-                    head_results = self.head_model.track(frame, conf=0.40, imgsz=800, persist=True, verbose=False, tracker="bytetrack.yaml")
+                    head_results = self.head_model.track(frame, conf=0.40, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
                 else:
-                    head_results = self.head_model(frame, conf=0.40, imgsz=800, verbose=False)
+                    head_results = self.head_model(frame, conf=0.40, imgsz=512, verbose=False)
             primary_dets = self._parse_results(head_results)
 
         if primary_dets:
