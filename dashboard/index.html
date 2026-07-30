@@ -378,27 +378,7 @@
     <div id="seat-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:10px;"></div>
   </div>
 
-  <!-- Upload Panel for dynamic camera addition -->
-  <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
-    <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
-    <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
-    <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
-    <div style="margin-bottom:15px; display:flex; flex-wrap:wrap; align-items:center; gap:15px;">
-        <div style="display:none; align-items:center; gap:8px;">
-            <label for="sitting-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Seating Cap: </label>
-            <input type="number" id="sitting-cap-input" value="15" oninput="syncTotalCap()" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
-        </div>
-        <div style="display:none; align-items:center; gap:8px;">
-            <label for="standing-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Standing Cap: </label>
-            <input type="number" id="standing-cap-input" value="10" oninput="syncTotalCap()" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <label for="total-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Total Cap: </label>
-            <input type="number" id="total-cap-input" value="25" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
-        </div>
-    </div>
-    <button onclick="uploadCameras()" style="font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:#fff; background:var(--orange); border:none; padding:8px 18px; border-radius:8px; cursor:pointer;">Upload & Add</button>
-  </div>
+
 
 </div>
 <script>
