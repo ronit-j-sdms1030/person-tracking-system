@@ -31,7 +31,7 @@ vision_runner = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup - Ensure site_config.yaml exists with default sample camera feeds
+    # Startup - Ensure site_config.yaml is initialized with default sample camera feeds
     config_file = "config/site_config.yaml"
     os.makedirs("config", exist_ok=True)
     if not os.path.exists(config_file) or os.path.getsize(config_file) == 0:
