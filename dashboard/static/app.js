@@ -132,11 +132,14 @@ function updateTrendCharts(c1Count, c2Count, totalPresent, cap) {
 
 function ensureCameraCardsExist(cameras) {
     if (!cameras) return;
+    window.activeCamCount = cameras.length;
     const grid = document.getElementById('cam-grid');
     const selectDiv = document.getElementById('cam-select');
     const summaryBar = document.getElementById('summary-bar');
-    if (!grid) return;
+    const cam2TrendCard = document.getElementById('cam2-trend-card');
+    const chartsGrid = document.getElementById('analytics-charts-grid');
 
+    if (!grid) return;
     const count = cameras.length;
 
     // 1. Remove extra camera cards if number of active cameras decreased
@@ -148,20 +151,31 @@ function ensureCameraCardsExist(cameras) {
         }
     });
 
-    // 2. Update select bar buttons
+    // 2. Hide/Show CAM 2 Occupancy Trend chart card based on camera count
+    if (cam2TrendCard && chartsGrid) {
+        if (count === 1) {
+            cam2TrendCard.style.display = 'none';
+            chartsGrid.style.gridTemplateColumns = '1fr';
+        } else {
+            cam2TrendCard.style.display = 'block';
+            chartsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        }
+    }
+
+    // 3. Update select bar buttons
     if (selectDiv) {
         let navHTML = '';
         cameras.forEach((cam, i) => {
             const num = i + 1;
-            navHTML += `<button onclick="selectCam('${num}', this)">Cam ${num}</button>`;
+            navHTML += `<button class="${(count === 1 || i === 0) ? 'active' : ''}" onclick="selectCam('${num}', this)">Cam ${num}</button>`;
         });
         if (count > 1) {
-            navHTML += `<button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+            navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
         }
         selectDiv.innerHTML = navHTML;
     }
 
-    // 3. Ensure a camera card exists in cam-grid for each active camera
+    // 4. Ensure a camera card exists in cam-grid for each active camera
     cameras.forEach((cam, i) => {
         const num = i + 1;
         const camId = cam.camera_id;
@@ -213,7 +227,7 @@ function ensureCameraCardsExist(cameras) {
         }
     });
 
-    // 4. Update summary bar groups
+    // 5. Update summary bar groups
     if (summaryBar) {
         let sumHTML = '';
         cameras.forEach((cam, i) => {
@@ -667,15 +681,20 @@ async function submitWizardCameras() {
             const result = await res.json();
             alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
             if (typeof loadCustomCamNames === 'function') loadCustomCamNames();
-            revealDashboardPanels(result.cameras_added.length);
-            selectCam('both', document.querySelectorAll('.cam-select button')[wizardSelectedCount]);
+            const count = result.cameras_added.length;
+            revealDashboardPanels(count);
+            if (count === 1) {
+                selectCam('1', document.querySelectorAll('.cam-select button')[0]);
+            } else {
+                selectCam('both', document.querySelectorAll('.cam-select button')[count]);
+            }
         }
     } catch(e) {
         alert(`Notice: ${e}`);
     } finally {
         if (launchBtn) {
             launchBtn.disabled = false;
-            launchBtn.textContent = "🚀 Confirm & Launch Cameras";
+            launchBtn.textContent = "Confirm & Launch Cameras";
         }
     }
 }
@@ -694,15 +713,37 @@ function revealDashboardPanels(cameraCount) {
     if (summary) summary.style.display = 'flex';
     if (analytics) analytics.style.display = 'block';
 
-    // Build single-camera view navigation buttons for all configured cameras
+    const count = cameraCount || 1;
+    window.activeCamCount = count;
+
+    // Prune card 2 if cameraCount is 1
+    const card2 = document.querySelector('.cam-card[data-cam="2"]');
+    if (card2 && count === 1) {
+        card2.remove();
+    }
+
+    const cam2TrendCard = document.getElementById('cam2-trend-card');
+    const chartsGrid = document.getElementById('analytics-charts-grid');
+    if (cam2TrendCard && chartsGrid) {
+        if (count === 1) {
+            cam2TrendCard.style.display = 'none';
+            chartsGrid.style.gridTemplateColumns = '1fr';
+        } else {
+            cam2TrendCard.style.display = 'block';
+            chartsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        }
+    }
+
+    // Build navigation buttons for camera setup
     const selectDiv = document.getElementById('cam-select');
     if (selectDiv) {
         let navHTML = '';
-        const count = cameraCount || 2;
         for (let i = 1; i <= count; i++) {
             navHTML += `<button class="${i === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
         }
-        navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        if (count > 1) {
+            navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        }
         selectDiv.innerHTML = navHTML;
     }
 }
