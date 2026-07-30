@@ -91,32 +91,52 @@ function renderZone(zoneData) {
         if (seatSummary) seatSummary.textContent = `${sittingCount} / ${totalSeats} Seats Occupied (${pct}%)`;
         if (seatProgressBar) seatProgressBar.style.width = `${pct}%`;
         
-        let gridHTML = '';
-        for (let i = 1; i <= totalSeats; i++) {
-            const isOccupied = i <= sittingCount;
-            const seatNum = i < 10 ? `S-0${i}` : `S-${i}`;
-            
-            if (isOccupied) {
-                gridHTML += `
-                    <div class="seat-block occupied" style="background:linear-gradient(135deg, rgba(168,85,247,0.22), rgba(99,102,241,0.18)); border:1px solid rgba(168,85,247,0.7); border-radius:10px; padding:12px 10px; text-align:center; box-shadow:0 4px 14px rgba(168,85,247,0.18); transition:all 0.3s ease;">
-                        <div style="font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:700; color:#E9D5FF; letter-spacing:0.02em;">${seatNum}</div>
-                        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:5px; background:rgba(168,85,247,0.3); border:1px solid rgba(168,85,247,0.5); border-radius:12px; padding:2px 8px;">
-                            <span style="width:5px; height:5px; border-radius:50%; background:#C084FC; display:inline-block;"></span>
-                            <span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; font-weight:700; color:#F3E8FF; text-transform:uppercase;">BUSY</span>
-                        </div>
-                    </div>`;
-            } else {
-                gridHTML += `
-                    <div class="seat-block vacant" style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:10px; padding:12px 10px; text-align:center; transition:all 0.3s ease;">
-                        <div style="font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:0.02em;">${seatNum}</div>
-                        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:5px; background:rgba(255,255,255,0.04); border:1px solid var(--panel-border); border-radius:12px; padding:2px 8px;">
-                            <span style="width:5px; height:5px; border-radius:50%; background:var(--muted); opacity:0.5; display:inline-block;"></span>
-                            <span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; font-weight:600; color:var(--muted); text-transform:uppercase;">OPEN</span>
-                        </div>
-                    </div>`;
+        // Define spatial seating layout matching video scene (Sofa, Chairs, Desks)
+        const zones = [
+            { name: "🛋️ Main Lounge Sofa", prefix: "Sofa", count: 3 },
+            { name: "🪑 Foreground Lounge Chairs", prefix: "Chair", count: 2 },
+            { name: "💻 Workstation Desks", prefix: "Desk", count: Math.max(0, totalSeats - 5) }
+        ];
+
+        let seatCounter = 1;
+        let layoutHTML = '';
+
+        zones.forEach(z => {
+            if (z.count <= 0) return;
+            layoutHTML += `
+                <div style="grid-column: 1 / -1; margin-top:8px; margin-bottom:2px;">
+                    <div style="font-family:'Space Grotesk',sans-serif; font-size:12.5px; font-weight:700; color:var(--text); opacity:0.9;">${z.name}</div>
+                </div>`;
+                
+            for (let k = 1; k <= z.count; k++) {
+                const currentSeatIdx = seatCounter;
+                const isOccupied = currentSeatIdx <= sittingCount;
+                const seatLabel = `${z.prefix}-${k}`;
+                seatCounter++;
+
+                if (isOccupied) {
+                    layoutHTML += `
+                        <div class="seat-block occupied" style="background:linear-gradient(135deg, rgba(168,85,247,0.22), rgba(99,102,241,0.18)); border:1px solid rgba(168,85,247,0.7); border-radius:10px; padding:12px 8px; text-align:center; box-shadow:0 4px 14px rgba(168,85,247,0.18); transition:all 0.3s ease;">
+                            <div style="font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:700; color:#E9D5FF; letter-spacing:0.02em;">${seatLabel}</div>
+                            <div style="display:inline-flex; align-items:center; gap:4px; margin-top:5px; background:rgba(168,85,247,0.3); border:1px solid rgba(168,85,247,0.5); border-radius:12px; padding:2px 8px;">
+                                <span style="width:5px; height:5px; border-radius:50%; background:#C084FC; display:inline-block;"></span>
+                                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:700; color:#F3E8FF; text-transform:uppercase;">BUSY</span>
+                            </div>
+                        </div>`;
+                } else {
+                    layoutHTML += `
+                        <div class="seat-block vacant" style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:10px; padding:12px 8px; text-align:center; transition:all 0.3s ease;">
+                            <div style="font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:600; color:var(--muted); letter-spacing:0.02em;">${seatLabel}</div>
+                            <div style="display:inline-flex; align-items:center; gap:4px; margin-top:5px; background:rgba(255,255,255,0.04); border:1px solid var(--panel-border); border-radius:12px; padding:2px 8px;">
+                                <span style="width:5px; height:5px; border-radius:50%; background:var(--muted); opacity:0.5; display:inline-block;"></span>
+                                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; font-weight:600; color:var(--muted); text-transform:uppercase;">OPEN</span>
+                            </div>
+                        </div>`;
+                }
             }
-        }
-        seatGrid.innerHTML = gridHTML;
+        });
+
+        seatGrid.innerHTML = layoutHTML;
     }
 }
 
