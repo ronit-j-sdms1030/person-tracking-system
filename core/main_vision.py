@@ -133,7 +133,7 @@ class VisionRunner:
             frame_counter += 1
             current_time = time.time()
             
-            if frame_counter % 3 == 0 or not last_detections:
+            if frame_counter % 2 == 0 or not last_detections:
                 detections = tracker.process_frame(frame)
                 last_detections = detections
             else:
@@ -212,21 +212,24 @@ class VisionRunner:
                 bbox = d.get("head_bbox", d.get("bbox"))
                 track_id = d.get("track_id", "")
                 if bbox and len(bbox) == 4:
-                    # Apply tight 0.65 scale factor for smaller, compact head bounding boxes
-                    cx, cy = (bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0
-                    w = (bbox[2] - bbox[0]) * 0.65
-                    h = (bbox[3] - bbox[1]) * 0.65
+                    bx1, by1, bx2, by2 = bbox
+                    bw = bx2 - bx1
+                    bh = by2 - by1
                     
-                    x1 = max(0, int(cx - w / 2.0))
-                    y1 = max(0, int(cy - h / 2.0))
-                    x2 = int(cx + w / 2.0)
-                    y2 = int(cy + h / 2.0)
+                    # Crop top 28% of box if full body box to isolate head region only
+                    if bh / max(1, bw) > 1.2:
+                        hy2 = by1 + bh * 0.28
+                        hx1 = bx1 + bw * 0.15
+                        hx2 = bx2 - bw * 0.15
+                        x1, y1, x2, y2 = max(0, int(hx1)), max(0, int(by1)), int(hx2), int(hy2)
+                    else:
+                        x1, y1, x2, y2 = max(0, int(bx1)), max(0, int(by1)), int(bx2), int(by2)
 
                     color = (142, 207, 62)  # Crisp Green
                     label = f"#{track_id}"
                     
-                    # Draw clean rectangular bounding box around head
-                    cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+                    # Draw BOLDER 3px rectangular bounding box ONLY around head
+                    cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 3)
                     
                     # Draw text label background pill for crisp contrast
                     (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)

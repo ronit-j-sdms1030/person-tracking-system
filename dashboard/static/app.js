@@ -60,26 +60,63 @@ function initTrendChart() {
     });
 }
 
-function updateTrendChart(present) {
+let lastRecordedMinute = null;
+let currentMinuteSamples = [];
+let totalHeadcountSum = 0;
+let totalSampleCount = 0;
+let peakTimeRecorded = "--:--";
+
+function updateTrendChart(present, cap) {
     if (!trendChart) initTrendChart();
     if (!trendChart) return;
     
+    const now = new Date();
+    const minuteStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Accumulate samples for average & peak metrics
+    currentMinuteSamples.push(present);
+    totalHeadcountSum += present;
+    totalSampleCount++;
+    
+    // Update live peak headcount & peak time
     if (present > maxPeakHeadcount) {
         maxPeakHeadcount = present;
+        peakTimeRecorded = minuteStr;
         const peakEl = document.getElementById('peak-headcount-val');
         if (peakEl) peakEl.textContent = maxPeakHeadcount;
+        const peakTimeEl = document.getElementById('peak-time-val');
+        if (peakTimeEl) peakTimeEl.textContent = peakTimeRecorded;
     }
-    
-    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    
-    if (trendChart.data.labels.length > 25) {
-        trendChart.data.labels.shift();
-        trendChart.data.datasets[0].data.shift();
+
+    // Update Average Headcount
+    const avgHeadcount = (totalHeadcountSum / Math.max(1, totalSampleCount)).toFixed(1);
+    const avgEl = document.getElementById('avg-headcount-val');
+    if (avgEl) avgEl.textContent = avgHeadcount;
+
+    // Update Utilization Rate %
+    if (cap && cap > 0) {
+        const utilPct = Math.min(100, Math.round((present / cap) * 100));
+        const utilEl = document.getElementById('utilization-rate-val');
+        if (utilEl) utilEl.textContent = `${utilPct}%`;
     }
-    
-    trendChart.data.labels.push(nowStr);
-    trendChart.data.datasets[0].data.push(present);
-    trendChart.update('none');
+
+    // Push Minute-by-Minute data point when a new minute begins or on first render
+    if (lastRecordedMinute !== minuteStr) {
+        lastRecordedMinute = minuteStr;
+        
+        // Calculate average for the minute bucket
+        const minuteAvg = Math.round(currentMinuteSamples.reduce((a, b) => a + b, 0) / Math.max(1, currentMinuteSamples.length));
+        currentMinuteSamples = [];
+        
+        if (trendChart.data.labels.length > 30) {
+            trendChart.data.labels.shift();
+            trendChart.data.datasets[0].data.shift();
+        }
+        
+        trendChart.data.labels.push(minuteStr);
+        trendChart.data.datasets[0].data.push(minuteAvg);
+        trendChart.update('none');
+    }
 }
 
 function renderZone(zoneData) {
@@ -93,7 +130,7 @@ function renderZone(zoneData) {
     const entered = zoneData.entered_today;
     const exited = zoneData.exited_today;
 
-    updateTrendChart(present);
+    updateTrendChart(present, cap);
 
     // Loop through cameras to update their specific stats
     if (zoneData.cameras) {

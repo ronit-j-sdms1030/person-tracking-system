@@ -311,10 +311,19 @@
   <!-- Real-Time Peak Trends & Analytics Chart Panel -->
   <div class="analytics-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Real-Time Occupancy Trends & Peak Analytics</h3>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--green); background:var(--chip-green-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
-          Peak Headcount Today: <b id="peak-headcount-val">0</b>
+      <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Minute-by-Minute Occupancy Trends & Deep Analytics</h3>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green); background:var(--chip-green-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+          Peak: <b id="peak-headcount-val">0</b>
+        </span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--cyan, #38BDF8); background:rgba(56, 189, 248, 0.12); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+          Avg: <b id="avg-headcount-val">0</b>
+        </span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--amber, #F59E0B); background:var(--chip-amber-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+          Utilization: <b id="utilization-rate-val">0%</b>
+        </span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--purple, #A855F7); background:var(--chip-purple-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+          Peak Time: <b id="peak-time-val">--:--</b>
         </span>
       </div>
       <a href="/export-csv" download style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text); background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 16px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer; transition:all 0.2s ease;">
