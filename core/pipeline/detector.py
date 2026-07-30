@@ -37,7 +37,7 @@ class DetResults:
         return DetResults(self.xyxy[idx], self.conf[idx], self.cls[idx])
 
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.65):
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.50):
         self.conf_thresh = conf_thresh
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.head_model = None
@@ -147,9 +147,9 @@ class Detector:
             try:
                 with torch.inference_mode():
                     if track:
-                        results = self.body_model.track(frame, conf=0.65, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
+                        results = self.body_model.track(frame, conf=0.50, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                     else:
-                        results = self.body_model(frame, conf=0.65, imgsz=640, verbose=False)
+                        results = self.body_model(frame, conf=0.50, imgsz=640, verbose=False)
                 primary_dets = self._parse_results(results)
             except Exception as e:
                 logger.warning(f"Primary head detection error, falling back to YOLO: {e}")
@@ -158,9 +158,9 @@ class Detector:
         if not primary_dets and self.head_model:
             with torch.inference_mode():
                 if track:
-                    head_results = self.head_model.track(frame, conf=0.65, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
+                    head_results = self.head_model.track(frame, conf=0.50, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                 else:
-                    head_results = self.head_model(frame, conf=0.65, imgsz=640, verbose=False)
+                    head_results = self.head_model(frame, conf=0.50, imgsz=640, verbose=False)
             primary_dets = self._parse_results(head_results)
 
         if primary_dets:
@@ -171,7 +171,7 @@ class Detector:
             if getattr(self, "sitting_model", None) is not None:
                 try:
                     with torch.inference_mode():
-                        sit_res = self.sitting_model(frame, conf=0.65, verbose=False)
+                        sit_res = self.sitting_model(frame, conf=0.50, verbose=False)
                     sit_dets = self._parse_results(sit_res)
                     sit_boxes = [s["bbox"] for s in sit_dets if s.get("class_id") == 0]
 
@@ -211,10 +211,10 @@ class Detector:
                     continue
                 aspect_ratio = w / h
                 
-                # User-Specified Head Aspect Ratio (0.5 to 1.5) & Size Limits (12px to 180px)
+                # Head Aspect Ratio (0.5 to 1.5) & Size Limits (12px to 300px for close-up foreground heads)
                 if not (0.5 <= aspect_ratio <= 1.5):
                     continue
-                if not (12 <= w <= 180 and 12 <= h <= 180):
+                if not (12 <= w <= 300 and 12 <= h <= 300):
                     continue
 
                 track_id = None
