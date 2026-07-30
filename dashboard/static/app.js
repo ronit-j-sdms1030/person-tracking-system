@@ -18,6 +18,7 @@ function syncTotalCap() {
 
 function renderZone(zoneData) {
     if (zoneData.zone_id !== 'main_floor') return;
+    window.lastZoneData = zoneData;
 
     // Both cameras show the zone level aggregated state
     const cap = zoneData.capacity_max;
@@ -91,12 +92,40 @@ function renderZone(zoneData) {
         if (seatSummary) seatSummary.textContent = `${sittingCount} / ${totalSeats} Seats Occupied (${pct}%)`;
         if (seatProgressBar) seatProgressBar.style.width = `${pct}%`;
         
-        // Define spatial seating layout matching video scene (Sofa, Chairs, Desks)
-        const zones = [
-            { name: "🛋️ Main Lounge Sofa", prefix: "Sofa", count: 3 },
-            { name: "🪑 Foreground Lounge Chairs", prefix: "Chair", count: 2 },
-            { name: "💻 Workstation Desks", prefix: "Desk", count: Math.max(0, totalSeats - 5) }
-        ];
+        // Detect active video scene type to dynamically adapt seating layout map
+        const activeCard = document.querySelector('.cam-card:not([style*="display: none"])');
+        const activeCamTag = activeCard ? activeCard.querySelector('.caption-tag') : null;
+        const activeCamText = activeCamTag ? activeCamTag.textContent.toLowerCase() : '';
+        const activeVidSrc = activeCard && activeCard.querySelector('img') ? (activeCard.querySelector('img').src || '').toLowerCase() : '';
+
+        let zones = [];
+        if (activeVidSrc.includes('bus') || activeCamText.includes('bus')) {
+            const sideCap = Math.max(1, Math.floor(totalSeats * 0.4));
+            zones = [
+                { name: "🚌 Left Aisle Seats", prefix: "L-Seat", count: sideCap },
+                { name: "🚌 Right Aisle Seats", prefix: "R-Seat", count: sideCap },
+                { name: "🚌 Rear Bench Seats", prefix: "Rear", count: Math.max(0, totalSeats - 2 * sideCap) }
+            ];
+        } else if (activeVidSrc.includes('university') || activeVidSrc.includes('lecture') || activeCamText.includes('classroom')) {
+            const rowCap = Math.max(1, Math.floor(totalSeats * 0.35));
+            zones = [
+                { name: "🎓 Front Tier Row", prefix: "Front", count: rowCap },
+                { name: "🎓 Middle Tier Row", prefix: "Mid", count: rowCap },
+                { name: "🎓 Back Tier Row", prefix: "Back", count: Math.max(0, totalSeats - 2 * rowCap) }
+            ];
+        } else if (activeVidSrc.includes('metro') || activeCamText.includes('metro')) {
+            const benchCap = Math.max(1, Math.floor(totalSeats * 0.5));
+            zones = [
+                { name: "🚆 Bench A (Left)", prefix: "BenchA", count: benchCap },
+                { name: "🚆 Bench B (Right)", prefix: "BenchB", count: Math.max(0, totalSeats - benchCap) }
+            ];
+        } else {
+            zones = [
+                { name: "🛋️ Main Lounge Sofa", prefix: "Sofa", count: 3 },
+                { name: "🪑 Foreground Lounge Chairs", prefix: "Chair", count: 2 },
+                { name: "💻 Workstation Desks", prefix: "Desk", count: Math.max(0, totalSeats - 5) }
+            ];
+        }
 
         let seatCounter = 1;
         let layoutHTML = '';

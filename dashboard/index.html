@@ -371,6 +371,7 @@
       cam1.style.display = ''; cam2.style.display = '';
       sumCam1.style.display = ''; sumCam2.style.display = ''; sumDiv.style.display = 'flex';
     }
+    if (window.lastZoneData) renderZone(window.lastZoneData);
   }
   
   // Set video stream sources after page load to prevent infinite loading spinner
