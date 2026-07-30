@@ -694,3 +694,13 @@ function launchDemoSampleFeeds() {
     revealDashboardPanels(2);
     selectCam('both', document.querySelectorAll('.cam-select button')[2]);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Auto-configure Wizard slots for 2 cameras on initial load so capacity inputs & slot assignment panel are visible immediately
+    const btns = document.querySelectorAll('.wizard-choice-btn');
+    if (btns && btns.length >= 2) {
+        configureWizardSlots(2, btns[1]);
+    } else {
+        configureWizardSlots(2, null);
+    }
+});
