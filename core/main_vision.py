@@ -212,8 +212,16 @@ class VisionRunner:
                 bbox = d.get("head_bbox", d.get("bbox"))
                 track_id = d.get("track_id", "")
                 if bbox and len(bbox) == 4:
-                    x1, y1, x2, y2 = map(int, bbox)
+                    # Apply tight 0.65 scale factor for smaller, compact head bounding boxes
+                    cx, cy = (bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0
+                    w = (bbox[2] - bbox[0]) * 0.65
+                    h = (bbox[3] - bbox[1]) * 0.65
                     
+                    x1 = max(0, int(cx - w / 2.0))
+                    y1 = max(0, int(cy - h / 2.0))
+                    x2 = int(cx + w / 2.0)
+                    y2 = int(cy + h / 2.0)
+
                     color = (142, 207, 62)  # Crisp Green
                     label = f"#{track_id}"
                     
