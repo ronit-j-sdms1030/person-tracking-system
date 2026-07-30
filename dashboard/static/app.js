@@ -63,6 +63,26 @@ function initTrendCharts() {
     if (!cam2TrendChart) cam2TrendChart = createSingleChart('cam2TrendChart', '#38BDF8', 'rgba(56, 189, 248, 0.12)');
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    initTrendCharts();
+    if (localStorage.getItem('wizard_completed') !== 'true') {
+        const wizard = document.getElementById('initial-setup-wizard');
+        if (wizard) wizard.style.display = 'block';
+
+        const selectBar = document.getElementById('cam-select-bar');
+        const grid = document.getElementById('cam-grid');
+        const summary = document.getElementById('summary-bar');
+        const analytics = document.getElementById('analytics-panel');
+        const upload = document.querySelector('.upload-panel');
+        
+        if (selectBar) selectBar.style.display = 'none';
+        if (grid) grid.style.display = 'none';
+        if (summary) summary.style.display = 'none';
+        if (analytics) analytics.style.display = 'none';
+        if (upload) upload.style.display = 'none';
+    }
+});
+
 let lastRecordedMinute = null;
 let cam1Samples = [];
 let cam2Samples = [];
@@ -210,7 +230,7 @@ function renderZone(zoneData) {
 
 function handleInitialState(data) {
     if (data.main_floor) {
-        if (data.main_floor.cameras && data.main_floor.cameras.length > 0) {
+        if (localStorage.getItem('wizard_completed') === 'true' && data.main_floor.cameras && data.main_floor.cameras.length > 0) {
             revealDashboardPanels(data.main_floor.cameras.length);
         }
         renderZone(data.main_floor);
@@ -598,6 +618,8 @@ async function submitWizardCameras() {
 }
 
 function revealDashboardPanels(cameraCount) {
+    localStorage.setItem('wizard_completed', 'true');
+
     const wizard = document.getElementById('initial-setup-wizard');
     if (wizard) wizard.style.display = 'none';
 
@@ -605,11 +627,13 @@ function revealDashboardPanels(cameraCount) {
     const grid = document.getElementById('cam-grid');
     const summary = document.getElementById('summary-bar');
     const analytics = document.getElementById('analytics-panel');
+    const upload = document.querySelector('.upload-panel');
     
     if (selectBar) selectBar.style.display = 'flex';
     if (grid) grid.style.display = 'grid';
     if (summary) summary.style.display = 'flex';
     if (analytics) analytics.style.display = 'block';
+    if (upload) upload.style.display = 'block';
 
     // Build single-camera view navigation buttons for all configured cameras
     const selectDiv = document.getElementById('cam-select');
