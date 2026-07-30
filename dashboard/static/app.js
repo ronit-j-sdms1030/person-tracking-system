@@ -577,14 +577,21 @@ function openCameraSetupWizard() {
     }
 }
 
-function configureWizardSlots(count) {
+function configureWizardSlots(count, btn) {
     wizardSelectedCount = count;
+    
+    document.querySelectorAll('.wizard-choice-btn').forEach(b => b.classList.remove('active'));
+    if (btn && btn.classList) btn.classList.add('active');
+
     const badge = document.getElementById('wizard-slot-count-badge');
     const container = document.getElementById('wizard-slot-container');
     const inputsDiv = document.getElementById('wizard-slot-inputs');
     
     if (badge) badge.textContent = count;
-    if (container) container.style.display = 'block';
+    if (container) {
+        container.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     
     let html = '';
     for (let i = 1; i <= count; i++) {

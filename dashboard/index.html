@@ -250,24 +250,26 @@
   <div id="initial-setup-wizard" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:32px; margin-bottom:25px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.35); transition:all 0.3s ease;">
     <div style="font-size:42px; margin-bottom:12px;">🎥</div>
     <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin:0 0 8px 0; color:var(--text);">Multi-Camera System Configuration</h2>
-    <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitor    <!-- Step 1: Uncapped Camera Count Selection Provisions -->
+    <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitoring?</p>
+
+    <!-- Step 1: Uncapped Camera Count Selection Provisions -->
     <div style="display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px;">
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(1)">
+      <button class="wizard-choice-btn" onclick="configureWizardSlots(1, this)">
         <span>📹 1 Camera</span>
       </button>
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(2)">
+      <button class="wizard-choice-btn" onclick="configureWizardSlots(2, this)">
         <span>👥 2 Cameras (Pairs)</span>
       </button>
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(3)">
+      <button class="wizard-choice-btn" onclick="configureWizardSlots(3, this)">
         <span>🖥️ 3 Cameras</span>
       </button>
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(4)">
+      <button class="wizard-choice-btn" onclick="configureWizardSlots(4, this)">
         <span>🎥 4 Cameras</span>
       </button>
       <div style="display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 14px; border-radius:12px;">
         <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Custom:</span>
         <input type="number" id="custom-cam-input" min="1" max="50" value="5" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:5px 8px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:55px; outline:none;">
-        <button onclick="configureWizardSlots(parseInt(document.getElementById('custom-cam-input').value) || 5)" style="background:var(--orange); color:#fff; border:none; padding:6px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set</button>
+        <button onclick="configureWizardSlots(parseInt(document.getElementById('custom-cam-input').value) || 5, this)" style="background:var(--orange); color:#fff; border:none; padding:6px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set</button>
       </div>
     </div>
 
@@ -275,7 +277,7 @@
     <div id="wizard-slot-container" style="display:none; text-align:left; max-width:650px; margin:0 auto; background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:20px;">
       <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
         <span>Assign Video Feeds for <span id="wizard-slot-count-badge">2</span> Camera(s)</span>
-        <button onclick="launchDemoSampleFeeds()" style="background:rgba(62,207,142,0.15); color:var(--green); border:1px solid rgba(62,207,142,0.3); padding:4px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer;">⚡ Launch Sample Feeds</button>
+        <button onclick="launchDemoSampleFeeds()" style="background:rgba(62,207,142,0.15); color:var(--green); border:1px solid rgba(62,207,142,0.3); padding:6px 14px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">⚡ Launch Sample Feeds</button>
       </div>
 
       <div id="wizard-slot-inputs" style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
@@ -283,6 +285,7 @@
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:12px;">
+        <button onclick="launchDemoSampleFeeds()" style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:var(--text); background:var(--panel); border:1px solid var(--panel-border); padding:10px 18px; border-radius:8px; cursor:pointer;">⚡ Use Default Sample Feeds</button>
         <button onclick="submitWizardCameras()" id="wizard-launch-btn" style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#fff; background:var(--orange); border:none; padding:10px 24px; border-radius:8px; cursor:pointer;">🚀 Confirm & Launch Cameras</button>
       </div>
     </div>
