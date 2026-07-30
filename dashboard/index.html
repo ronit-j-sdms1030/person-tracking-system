@@ -737,14 +737,21 @@
     const allSumGrps = document.querySelectorAll('#summary-bar .grp');
     const sumDiv = document.getElementById('sum-div');
     const grid = document.getElementById('cam-grid');
+    const activeCount = window.activeCamCount || 1;
 
     if (which === 'both' || which === 'all') {
-      allCards.forEach(card => card.style.display = '');
-      allSumGrps.forEach(grp => grp.style.display = '');
-      if (sumDiv) sumDiv.style.display = 'flex';
+      allCards.forEach((card, idx) => {
+        const camNum = parseInt(card.getAttribute('data-cam')) || (idx + 1);
+        card.style.display = (camNum <= activeCount) ? '' : 'none';
+      });
+      allSumGrps.forEach((grp, idx) => {
+        const num = idx + 1;
+        grp.style.display = (num <= activeCount) ? '' : 'none';
+      });
+      if (sumDiv) sumDiv.style.display = (activeCount > 1) ? 'flex' : 'none';
       const colSelect = document.getElementById('grid-cols-select');
       const selectedCol = colSelect ? colSelect.value : 'cols-2';
-      if (grid) grid.className = `cam-grid ${selectedCol}`;
+      if (grid) grid.className = `cam-grid ${activeCount === 1 ? 'cols-1' : selectedCol}`;
     } else {
       const targetIdx = String(which);
       allCards.forEach((card, idx) => {

@@ -457,9 +457,19 @@ async function uploadCameras() {
       const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Server returned HTTP ${res.status}`);
       const result = await res.json();
+      const count = result.cameras_added.length;
       
-      alert(`✅ Successfully added ${result.cameras_added.length} camera feed(s)! Processing started.`);
+      alert(`✅ Successfully added ${count} camera feed(s)! Processing started.`);
       
+      if (typeof fetchStatus === 'function') await fetchStatus();
+      if (typeof revealDashboardPanels === 'function') revealDashboardPanels(count);
+      
+      if (count === 1) {
+          selectCam('1', document.querySelectorAll('.cam-select button')[0]);
+      } else {
+          selectCam('both', document.querySelectorAll('.cam-select button')[count]);
+      }
+
       // Refresh video stream feeds
       setTimeout(() => {
           const v1 = document.getElementById('vid-cam_door_1');
