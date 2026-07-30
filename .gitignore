@@ -12,3 +12,5 @@ data/sample_videos/*.mov
 logs/events.jsonl
 .DS_Store
 runs/
+.session_secret
+

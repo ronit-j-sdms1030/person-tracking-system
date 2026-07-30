@@ -153,58 +153,64 @@ function renderZone(zoneData) {
 
     updateTrendCharts(c1Count, c2Count, present, cap);
 
-    // Loop through cameras to update their specific stats
-    if (zoneData.cameras) {
-        zoneData.cameras.forEach((cam, idx) => {
-            const prefix = `c${idx + 1}`;
-
-            if (prefix) {
-                // Update distinct stats specifically for this camera feed
-                const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : present;
-                const camRemain = Math.max(0, cap - camPresent);
-
-                const elCap = document.getElementById(`${prefix}-cap`);
-                const elPresent = document.getElementById(`${prefix}-present`);
-                const elRemaining = document.getElementById(`${prefix}-remaining`);
-                
-                if (elCap) elCap.textContent = cap;
-                if (elPresent) elPresent.textContent = camPresent;
-                if (elRemaining) elRemaining.textContent = camRemain;
-
-                // Update summary bar elements for this specific camera
-                const sumPresent = document.getElementById(`s-${prefix}-present`);
-                const sumRemaining = document.getElementById(`s-${prefix}-remaining`);
-                if (sumPresent) sumPresent.textContent = camPresent;
-                if (sumRemaining) sumRemaining.textContent = camRemain;
-            }
-        });
-    }
-
     const sittingMax = zoneData.capacity_sitting_max || 15;
     const standingMax = zoneData.capacity_standing_max || 10;
     const sittingRem = zoneData.remaining_sitting_capacity !== undefined ? zoneData.remaining_sitting_capacity : Math.max(0, sittingMax - (zoneData.sitting_count || 0));
     const standingRem = zoneData.remaining_standing_capacity !== undefined ? zoneData.remaining_standing_capacity : Math.max(0, standingMax - (zoneData.standing_count || 0));
 
-    for (const prefix of ['c1', 'c2']) {
-        const elSittingMax = document.getElementById(`${prefix}-sitting-max`);
-        const elSittingRem = document.getElementById(`${prefix}-sitting-rem`);
-        const elStandingMax = document.getElementById(`${prefix}-standing-max`);
-        const elStandingRem = document.getElementById(`${prefix}-standing-rem`);
-        
-        if (elSittingMax) elSittingMax.textContent = sittingMax;
-        if (elSittingRem) elSittingRem.textContent = sittingRem;
-        if (elStandingMax) elStandingMax.textContent = standingMax;
-        if (elStandingRem) elStandingRem.textContent = standingRem;
+    // Loop through cameras to update their specific stats
+    if (zoneData.cameras) {
+        zoneData.cameras.forEach((cam, idx) => {
+            const prefix = `c${idx + 1}`;
+
+            // Update distinct stats specifically for this camera feed
+            const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : present;
+            const camRemain = Math.max(0, cap - camPresent);
+
+            const elCap = document.getElementById(`${prefix}-cap`);
+            const elPresent = document.getElementById(`${prefix}-present`);
+            const elRemaining = document.getElementById(`${prefix}-remaining`);
+            
+            if (elCap) elCap.textContent = cap;
+            if (elPresent) elPresent.textContent = camPresent;
+            if (elRemaining) elRemaining.textContent = camRemain;
+
+            const elSittingMax = document.getElementById(`${prefix}-sitting-max`);
+            const elSittingRem = document.getElementById(`${prefix}-sitting-rem`);
+            const elStandingMax = document.getElementById(`${prefix}-standing-max`);
+            const elStandingRem = document.getElementById(`${prefix}-standing-rem`);
+            
+            if (elSittingMax) elSittingMax.textContent = sittingMax;
+            if (elSittingRem) elSittingRem.textContent = sittingRem;
+            if (elStandingMax) elStandingMax.textContent = standingMax;
+            if (elStandingRem) elStandingRem.textContent = standingRem;
+        });
     }
 
-    // Update summary bottom bar
-    document.getElementById('s-c1-present').textContent = present;
-    document.getElementById('s-c1-remaining').textContent = remaining;
-    document.getElementById('s-c2-present').textContent = present;
-    document.getElementById('s-c2-remaining').textContent = remaining;
-    
-    document.getElementById('s-total-occupancy').textContent = 'total ' + present;
-    document.getElementById('s-total-entered').textContent = 'entered ' + entered;
+    // Update quick capacity input value if present
+    const quickCapInput = document.getElementById('quick-capacity-input');
+    if (quickCapInput && document.activeElement !== quickCapInput) {
+        quickCapInput.value = cap;
+    }
+
+    // Dynamic Summary Bar update for all cameras
+    const summaryBar = document.getElementById('summary-bar');
+    if (summaryBar && zoneData.cameras) {
+        let sumHTML = '';
+        zoneData.cameras.forEach((cam, idx) => {
+            const num = idx + 1;
+            const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : present;
+            const camRemain = Math.max(0, cap - camPresent);
+            sumHTML += `<div class="grp">CAM ${num} <b>${camPresent}</b> present · <b>${camRemain}</b> remain</div>`;
+            if (idx < zoneData.cameras.length - 1) {
+                sumHTML += `<div class="divider" style="display:flex;"></div>`;
+            }
+        });
+        sumHTML += `<div class="spacer"></div>`;
+        sumHTML += `<div class="pill" id="s-total-occupancy">total ${present}</div>`;
+        sumHTML += `<div class="pill" id="s-total-entered" style="display:none;">entered ${entered}</div>`;
+        summaryBar.innerHTML = sumHTML;
+    }
 
     // Render Interactive Seating Plan Map
     const seatGrid = document.getElementById('seat-grid');
@@ -339,7 +345,13 @@ function buildCameraCards(cameraList) {
           </div>
           <div class="stats-col">
             <div class="stat-grid">
-              <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c${num}-cap">0</div><div class="lbl">Total cap.</div></div>
+              <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);">
+                <div class="num" id="c${num}-cap">0</div>
+                <div class="lbl" style="display:flex; align-items:center; justify-content:space-between;">
+                  <span>Total cap.</span>
+                  <button onclick="editCamCapacity('${camId}', ${num})" style="background:none; border:none; color:var(--blue); cursor:pointer; font-size:10px; padding:0; text-decoration:underline;" title="Edit Capacity">edit</button>
+                </div>
+              </div>
               <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c${num}-present">0</div><div class="lbl">Present</div></div>
               <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c${num}-remaining">0</div><div class="lbl">Remaining</div></div>
               <div class="chip c${num}-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c${num}-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c${num}-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c${num}-sitting-rem">15</span> rem)</div></div>
@@ -472,12 +484,16 @@ document.getElementById('video-files').addEventListener('change', (e) => {
     // Default to Camera 1 for first file, Camera 2 for second file
     const defaultSlot = (i === 0) ? 'cam_door_1' : 'cam_room_1';
     container.innerHTML += `
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
         <span style="font-family:'JetBrains Mono',monospace; font-size:12px; min-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
         <select id="slot-${i}" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:4px 8px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px;">
           <option value="cam_door_1" ${defaultSlot === 'cam_door_1' ? 'selected' : ''}>Assign to Camera 1</option>
           <option value="cam_room_1" ${defaultSlot === 'cam_room_1' ? 'selected' : ''}>Assign to Camera 2</option>
         </select>
+        <div style="display:flex; align-items:center; gap:4px; background:var(--panel-2); border:1px solid var(--panel-border); padding:3px 8px; border-radius:6px;">
+          <span style="font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Cap:</span>
+          <input type="number" id="upload-cam-cap-${i}" value="25" min="1" max="1000" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:2px 5px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; width:50px; outline:none;">
+        </div>
         <span style="background:var(--chip-amber-bg); color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 10px; border-radius:6px;">All Features</span>
         <input type="hidden" id="role-${i}" value="both">
       </div>`;
@@ -499,6 +515,10 @@ async function uploadCameras() {
     formData.append('files', files[i]);
     formData.append('roles', document.getElementById(`role-${i}`).value);
     formData.append('slots', document.getElementById(`slot-${i}`).value);
+    const capEl = document.getElementById(`upload-cam-cap-${i}`);
+    if (capEl && capEl.value) {
+      formData.append('cam_capacities', parseInt(capEl.value));
+    }
   }
 
   const totalCapEl = document.getElementById('total-cap-input');
@@ -569,6 +589,24 @@ async function resetData() {
         }
     } catch (e) {
         console.error("Reset failed", e);
+    }
+async function editCamCapacity(camId, num) {
+    const currentVal = document.getElementById(`c${num}-cap`) ? document.getElementById(`c${num}-cap`).textContent : 25;
+    const newVal = prompt(`Set Capacity for Camera ${num} (${camId}):`, currentVal);
+    if (newVal !== null && !isNaN(parseInt(newVal)) && parseInt(newVal) > 0) {
+        const cap = parseInt(newVal);
+        try {
+            const formData = new FormData();
+            formData.append('capacity', cap);
+            const res = await fetch(`/cameras/${camId}/capacity`, { method: 'POST', body: formData });
+            if (res.ok) {
+                if (typeof fetchStatus === 'function') fetchStatus();
+            } else {
+                alert("Failed to update camera capacity.");
+            }
+        } catch(e) {
+            alert("Error: " + e);
+        }
     }
 }
 
@@ -676,7 +714,13 @@ function configureWizardSlots(count) {
                     <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--text);">Camera ${i} Slot</span>
                     <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); font-weight:500;">(${slotName})</span>
                 </div>
-                <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:6px; background:var(--panel-2); border:1px solid var(--panel-border); padding:4px 8px; border-radius:8px;">
+                        <span style="font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; font-weight:600;">Capacity:</span>
+                        <input type="number" id="wizard-cam-cap-${i}" value="25" min="1" max="1000" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:3px 6px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11.5px; width:55px; outline:none; font-weight:600;">
+                    </div>
+                    <input type="file" id="wizard-file-${i}" accept="video/*" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);">
+                </div>
             </div>`;
     }
     if (inputsDiv) inputsDiv.innerHTML = html;
@@ -688,11 +732,13 @@ async function submitWizardCameras() {
     
     for (let i = 1; i <= wizardSelectedCount; i++) {
         const fileInput = document.getElementById(`wizard-file-${i}`);
+        const capInput = document.getElementById(`wizard-cam-cap-${i}`);
         if (fileInput && fileInput.files.length > 0) {
             const slotName = i === 1 ? 'cam_door_1' : (i === 2 ? 'cam_room_1' : `cam_slot_${i}`);
             formData.append('files', fileInput.files[0]);
             formData.append('roles', 'both');
             formData.append('slots', slotName);
+            formData.append('cam_capacities', parseInt(capInput ? capInput.value : 25) || 25);
             fileAdded = true;
         }
     }

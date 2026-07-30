@@ -61,6 +61,10 @@ class StateManager:
         if zone_id in self.zones:
             self.zones[zone_id].update_capacity(capacity, capacity_sitting, capacity_standing)
 
+    def update_camera_capacity(self, camera_id: str, capacity: int):
+        for zone in self.zones.values():
+            zone.update_camera_capacity(camera_id, capacity)
+
     def reset_zone(self, zone_id: str):
         if zone_id in self.zones:
             self.zones[zone_id].reset()

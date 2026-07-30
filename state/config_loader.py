@@ -45,7 +45,7 @@ class ConfigLoader:
         self.raw_data = data
         return data
 
-    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file"):
+    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file", capacity: int = None):
         if not self.raw_data:
             # Load raw data directly without triggering full validation
             with open(self.config_path, "r") as f:
@@ -62,6 +62,8 @@ class ConfigLoader:
             existing["source"] = source
             existing["role"] = role
             existing["adapter"] = adapter
+            if capacity is not None:
+                existing["capacity"] = capacity
             self._save()
             return existing
 
@@ -72,6 +74,8 @@ class ConfigLoader:
             "role": role,
             "frame_skip": 1,
         }
+        if capacity is not None:
+            new_cam["capacity"] = capacity
 
         if role in ("entry_exit", "both"):
             new_cam["cooldown_seconds"] = 2.0
@@ -95,6 +99,20 @@ class ConfigLoader:
             return True
         return False
 
+    def update_camera_capacity(self, camera_id: str, capacity: int):
+        if not self.raw_data:
+            with open(self.config_path, "r") as f:
+                self.raw_data = yaml.safe_load(f)
+        zone = self.raw_data["zones"][0]
+        for cam in zone.get("cameras", []):
+            if cam["camera_id"] == camera_id:
+                cam["capacity"] = capacity
+                break
+        self._save()
+        from state.event_queue import state_manager
+        state_manager.update_camera_capacity(camera_id, capacity)
+        return True
+
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if not self.raw_data:
             with open(self.config_path, "r") as f:
@@ -107,6 +125,9 @@ class ConfigLoader:
             zone["capacity_standing_max"] = capacity_standing
         if capacity is not None:
             zone["capacity_max"] = capacity
+            # Also update cameras without individual capacities
+            for cam in zone.get("cameras", []):
+                cam["capacity"] = capacity
         elif capacity_sitting is not None or capacity_standing is not None:
             zone["capacity_max"] = (zone.get("capacity_sitting_max", 15) + zone.get("capacity_standing_max", 10))
             

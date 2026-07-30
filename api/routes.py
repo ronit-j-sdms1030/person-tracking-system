@@ -21,6 +21,19 @@ def get_zone_status(zone_id: str):
         raise HTTPException(status_code=404, detail="Zone not found")
     return status
 
+@router.post("/capacity")
+def set_capacity(
+    capacity: Optional[int] = Form(None),
+    capacity_sitting: Optional[int] = Form(None),
+    capacity_standing: Optional[int] = Form(None),
+):
+    config_loader.update_capacity(
+        capacity=capacity,
+        capacity_sitting=capacity_sitting,
+        capacity_standing=capacity_standing
+    )
+    return {"status": "ok", "message": "Capacity updated successfully"}
+
 @router.post("/reset")
 def reset_data():
     from api.main import vision_runner
@@ -94,6 +107,7 @@ async def upload_cameras(
     files: List[UploadFile],
     roles: List[str] = Form(...),
     slots: Optional[List[str]] = Form(None),
+    cam_capacities: Optional[List[int]] = Form(None),
     capacity: Optional[int] = Form(None),
     capacity_sitting: Optional[int] = Form(None),
     capacity_standing: Optional[int] = Form(None),
@@ -127,8 +141,11 @@ async def upload_cameras(
                 while chunk := await file.read(1024 * 1024):
                     f.write(chunk)
 
+            # Get per-camera capacity if provided
+            cam_cap = cam_capacities[i] if (cam_capacities and i < len(cam_capacities)) else capacity
+
             # Add camera to config (saves to site_config.yaml)
-            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role)
+            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role, capacity=cam_cap)
             added.append(cam_id)
             
             # Hot-start a new camera thread in the running pipeline
@@ -177,6 +194,11 @@ def delete_camera(camera_id: str):
         del state_manager.camera_to_zone[camera_id]
         
     return {"status": "ok", "message": f"Deleted {camera_id}"}
+
+@router.post("/cameras/{camera_id}/capacity")
+def set_camera_capacity(camera_id: str, capacity: int = Form(...)):
+    config_loader.update_camera_capacity(camera_id, capacity)
+    return {"status": "ok", "camera_id": camera_id, "capacity": capacity}
 
 @router.post("/cameras/{camera_id}/pause")
 def pause_camera(camera_id: str):

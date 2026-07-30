@@ -24,9 +24,11 @@ class ZoneState:
         for cam in zone_config.get("cameras", []):
             cam_id = cam["camera_id"]
             role = cam.get("role", "entry_exit")
+            cam_cap = cam.get("capacity", self.capacity_max)
             self.camera_stats[cam_id] = {
                 "camera_id": cam_id,
-                "role": role
+                "role": role,
+                "capacity": cam_cap
             }
             if role in ["entry_exit", "both"]:
                 self.camera_stats[cam_id]["entered_today"] = 0
@@ -38,6 +40,10 @@ class ZoneState:
         self.track_timeout_seconds = 15.0 # Timeout for stale tracks (15s to prevent pause flickering)
         self.last_event_time = 0.0
 
+    def update_camera_capacity(self, camera_id: str, capacity: int):
+        if camera_id in self.camera_stats:
+            self.camera_stats[camera_id]["capacity"] = capacity
+
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if capacity_sitting is not None:
             self.capacity_sitting_max = capacity_sitting
@@ -45,8 +51,9 @@ class ZoneState:
             self.capacity_standing_max = capacity_standing
         if capacity is not None:
             self.capacity_max = capacity
-        elif capacity_sitting is not None or capacity_standing is not None:
-            self.capacity_max = self.capacity_sitting_max + self.capacity_standing_max
+            for stats in self.camera_stats.values():
+                if "capacity" not in stats or stats["capacity"] is None:
+                    stats["capacity"] = capacity
 
     def reset(self):
         self.entered_today = 0
@@ -83,10 +90,10 @@ class ZoneState:
         
         # Dynamically add camera to stats if it was uploaded after startup
         if cam_id and cam_id not in self.camera_stats:
-            # We don't know the exact role, but we can enable all stats fields just in case
             self.camera_stats[cam_id] = {
                 "camera_id": cam_id,
                 "role": "both",
+                "capacity": self.capacity_max,
                 "entered_today": 0,
                 "exited_today": 0,
                 "sitting": 0,
@@ -104,12 +111,6 @@ class ZoneState:
             
         track_id = event.get("track_id")
         posture = event.get("posture")
-        
-        # Track posture changes for the specific camera
-        if posture and cam_id in self.camera_stats and "sitting" in self.camera_stats[cam_id]:
-            # This is a naive increment; in reality you'd track the track_id's state and delta it.
-            # But for simple stats/demo matching Claude's logic, we will just recount below in to_dict 
-            pass
         
         if track_id is not None:
             if ev_type == "exited":
@@ -163,8 +164,10 @@ class ZoneState:
         # Tally current posture and distinct occupancy per camera
         for cam_id, stats in self.camera_stats.items():
             cam_count = sum(1 for data in self.active_tracks.values() if data.get("camera_id") == cam_id)
+            cam_cap = stats.get("capacity", self.capacity_max)
+            stats["capacity"] = cam_cap
             stats["current_occupancy"] = cam_count
-            stats["remaining_capacity"] = max(0, self.capacity_max - cam_count)
+            stats["remaining_capacity"] = max(0, cam_cap - cam_count)
             if "sitting" in stats:
                 stats["sitting"] = 0
                 stats["standing"] = 0
