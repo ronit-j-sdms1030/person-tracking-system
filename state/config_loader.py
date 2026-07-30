@@ -10,7 +10,40 @@ class ConfigLoader:
 
     def load_and_validate(self):
         if not os.path.exists(self.config_path):
-            raise FileNotFoundError(f"Config file not found: {self.config_path}")
+            os.makedirs(os.path.dirname(self.config_path) or ".", exist_ok=True)
+            sample_office = "data/sample_videos/VIDEO-2026-07-28-15-36-24.mp4"
+            sample_bus = "data/sample_videos/CCTV_footage_school_bus_students_202607281532.mp4"
+            office_src = sample_office if os.path.exists(sample_office) else "data/sample_videos/VIDEO-2026-07-28-15-36-24 (1).mp4"
+            bus_src = sample_bus if os.path.exists(sample_bus) else "data/sample_videos/test.mp4"
+            
+            default_config = {
+                "site_id": "stark_demo_site",
+                "zones": [{
+                    "zone_id": "main_floor",
+                    "capacity_max": 25,
+                    "capacity_sitting_max": 15,
+                    "capacity_standing_max": 10,
+                    "cameras": [
+                        {
+                            "camera_id": "cam_door_1",
+                            "adapter": "file",
+                            "source": office_src,
+                            "role": "both",
+                            "frame_skip": 1,
+                            "cooldown_seconds": 2.0
+                        },
+                        {
+                            "camera_id": "cam_room_1",
+                            "adapter": "file",
+                            "source": bus_src,
+                            "role": "posture",
+                            "frame_skip": 1
+                        }
+                    ]
+                }]
+            }
+            with open(self.config_path, "w") as f:
+                yaml.safe_dump(default_config, f, sort_keys=False)
         
         with open(self.config_path, "r") as f:
             data = yaml.safe_load(f)
