@@ -67,9 +67,9 @@ class PostureLogic:
             norm_x1 = bbox[0] / fw if bbox else 0.5
             norm_x2 = bbox[2] / fw if bbox else 0.5
             
-            # Seated sofa / desk region (middle-lower area, norm_y1 >= 0.38 and norm_y2 <= 0.85, center lounge)
-            if norm_y1 >= 0.38 and (0.20 <= norm_x1 <= 0.80) and norm_y2 >= 0.45:
-                logger.debug(f"[track_{track_id}] posture=sitting | signal=HEAD_BOX_LOWER_SEATING_AREA")
+            # Seated sofa / chair seating zone (capturing all 5 sofa/chair seated individuals)
+            if (0.26 <= norm_y1 <= 0.75 and 0.18 <= norm_x1 <= 0.45) or (0.45 <= norm_y1 <= 0.85 and 0.28 <= norm_x1 <= 0.55):
+                logger.debug(f"[track_{track_id}] posture=sitting | signal=HEAD_BOX_SOFA_SEATING_ZONE")
                 return "sitting"
             else:
                 logger.debug(f"[track_{track_id}] posture=standing | signal=HEAD_BOX_ELEVATED_STANDING_CROWD")
