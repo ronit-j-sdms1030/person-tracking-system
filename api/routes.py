@@ -40,12 +40,18 @@ zones:
 
     # 2. Stop camera threads & clear frame cache
     if vision_runner:
-        for cam_id in list(vision_runner.adapters.keys()):
-            vision_runner.stop_camera(cam_id)
-        vision_runner.latest_frames.clear()
-        vision_runner.adapters.clear()
-        vision_runner.threads.clear()
-        vision_runner.stopped_cameras.clear()
+        adapters = getattr(vision_runner, "adapters", {})
+        for cam_id in list(adapters.keys()):
+            try:
+                vision_runner.stop_camera(cam_id)
+            except Exception as e:
+                logger.warning(f"Error stopping camera {cam_id}: {e}")
+        if hasattr(vision_runner, "latest_frames"):
+            vision_runner.latest_frames.clear()
+        if hasattr(vision_runner, "adapters"):
+            vision_runner.adapters.clear()
+        if hasattr(vision_runner, "stopped_cameras"):
+            vision_runner.stopped_cameras.clear()
 
     # 3. Clear state manager camera mapping and zone state
     state_manager.camera_to_zone.clear()

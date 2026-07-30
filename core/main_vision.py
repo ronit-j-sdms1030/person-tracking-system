@@ -56,6 +56,7 @@ class VisionRunner:
         self.cameras_config = self._extract_cameras(self.config)
         self.threads = []
         self.running = False
+        self.adapters = {}
         self.latest_frames = {}
         self.stopped_cameras = set()
         self.paused_cameras = set()
