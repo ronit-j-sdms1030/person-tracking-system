@@ -697,6 +697,11 @@ async function submitWizardCameras() {
         }
     }
     
+    const capInput = document.getElementById('wizard-capacity-input');
+    if (capInput && capInput.value) {
+        formData.append('capacity', parseInt(capInput.value));
+    }
+    
     if (!fileAdded) {
         alert("Please choose a video file for your camera slots or click '⚡ Launch Sample Feeds'!");
         return;
