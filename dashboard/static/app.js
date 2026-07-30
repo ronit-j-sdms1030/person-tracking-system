@@ -103,20 +103,23 @@ function renderZone(zoneData) {
             else if (cam.camera_id === 'cam_room_1') prefix = 'c2';
 
             if (prefix) {
-                // Update common stats for both roles
+                // Update distinct stats specifically for this camera feed
+                const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : present;
+                const camRemain = Math.max(0, cap - camPresent);
+
                 const elCap = document.getElementById(`${prefix}-cap`);
                 const elPresent = document.getElementById(`${prefix}-present`);
                 const elRemaining = document.getElementById(`${prefix}-remaining`);
                 
                 if (elCap) elCap.textContent = cap;
-                if (elPresent) elPresent.textContent = present;
-                if (elRemaining) elRemaining.textContent = remaining;
+                if (elPresent) elPresent.textContent = camPresent;
+                if (elRemaining) elRemaining.textContent = camRemain;
 
-                // Update posture stats from zoneData
-                const elSitting = document.getElementById(`${prefix}-sitting`);
-                const elStanding = document.getElementById(`${prefix}-standing`);
-                if (elSitting) elSitting.textContent = zoneData.sitting_count !== undefined ? zoneData.sitting_count : (cam.sitting || 0);
-                if (elStanding) elStanding.textContent = zoneData.standing_count !== undefined ? zoneData.standing_count : (cam.standing || 0);
+                // Update summary bar elements for this specific camera
+                const sumPresent = document.getElementById(`s-${prefix}-present`);
+                const sumRemaining = document.getElementById(`s-${prefix}-remaining`);
+                if (sumPresent) sumPresent.textContent = camPresent;
+                if (sumRemaining) sumRemaining.textContent = camRemain;
             }
         });
     }

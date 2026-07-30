@@ -160,13 +160,15 @@ class ZoneState:
     def to_dict(self) -> dict:
         self._cleanup_stale_tracks(time.time())
         
-        # Reset sitting/standing per camera
+        # Tally current posture and distinct occupancy per camera
         for cam_id, stats in self.camera_stats.items():
+            cam_count = sum(1 for data in self.active_tracks.values() if data.get("camera_id") == cam_id)
+            stats["current_occupancy"] = cam_count
+            stats["remaining_capacity"] = max(0, self.capacity_max - cam_count)
             if "sitting" in stats:
                 stats["sitting"] = 0
                 stats["standing"] = 0
                 
-        # Tally current posture per camera
         for track_id, data in self.active_tracks.items():
             cam_id = data.get("camera_id")
             posture = data.get("posture")
