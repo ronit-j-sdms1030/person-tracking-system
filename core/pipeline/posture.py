@@ -7,8 +7,13 @@ class PostureLogic:
     ANGLE_STANDING_MIN = 150 # Leg relatively straight
     ANGLE_SITTING_MAX = 130  # Leg noticeably bent
 
+    # User-Specified Calibrated Tuning Thresholds:
+    FURNITURE_Y_BOUNDARY = 180.0  # Y = 180 boundary line (heads below Y=180 flagged as sitting)
+    MATH_CURVE_MARGIN = -0.2      # Curve margin penalty
+    HYSTERESIS_DELTA_Y = 40.0     # 40px vertical movement hysteresis threshold
+
     def __init__(self):
-        pass
+        self.track_state = {}     # track_id -> {'last_cy': float, 'posture': str}
 
     def _compute_angle(self, p1, p2, p3):
         v1 = p1 - p2
@@ -33,77 +38,45 @@ class PostureLogic:
     ) -> str:
         ar = None
         norm_y1, norm_y2, norm_h = 0.0, 0.0, 0.0
+        cy = 0.0
         
-        fh = frame_shape[0] if (frame_shape and len(frame_shape) >= 2 and frame_shape[0] > 0) else 720
-        fw = frame_shape[1] if (frame_shape and len(frame_shape) >= 2 and frame_shape[1] > 0) else 1280
+        fh = frame_shape[0] if (frame_shape and len(frame_shape) >= 2 and frame_shape[0] > 0) else 576
+        fw = frame_shape[1] if (frame_shape and len(frame_shape) >= 2 and frame_shape[1] > 0) else 1024
 
         if bbox is not None and len(bbox) == 4:
             x1, y1, x2, y2 = bbox
             width = x2 - x1
             height = y2 - y1
+            cy = (y1 + y2) / 2.0
             if height > 0:
                 ar = width / height
             norm_y1 = y1 / fh
             norm_y2 = y2 / fh
             norm_h = height / fh
 
-            # 1. Camera-Specific Manual ROI Rules (if explicitly configured for specialized cameras)
-            if enable_standing_aisle_roi and (x1 > standing_aisle_x1_min or (x1 + x2)/2 > standing_aisle_x1_min):
-                logger.debug(f"[track_{track_id}] posture=standing | signal=DOORWAY_AISLE_ROI_STANDING")
-                return "standing"
-
-            if enable_back_desk_roi and (y1 < back_desk_y1_max) and (y2 < back_desk_y2_max) and (x1 > back_desk_x1_min):
-                logger.debug(f"[track_{track_id}] posture=standing | signal=BACK_DESK_SPATIAL_ROI_OCCLUSION_RULE")
-                return "standing"
-
-        # 2. Universal Multi-Signal Posture Evaluator (Works across all environments: Bus, Office, Classroom)
-        signal = "DEFAULT_SITTING"
-        posture = "sitting"
-
-        # Standalone Head Box Evaluation:
-        if norm_h < 0.35:
-            # Elevated heads or background standing crowd (norm_y1 < 0.38 or head in upper 38% of frame)
-            # as well as standing people at sides (norm_x1 < 0.25 or norm_x2 > 0.75 when norm_y1 < 0.50)
-            norm_x1 = bbox[0] / fw if bbox else 0.5
-            norm_x2 = bbox[2] / fw if bbox else 0.5
-            
-            # Seated sofa / chair seating zone (capturing all 5 sofa/chair seated individuals)
-            if (0.26 <= norm_y1 <= 0.75 and 0.18 <= norm_x1 <= 0.45) or (0.45 <= norm_y1 <= 0.85 and 0.28 <= norm_x1 <= 0.55):
-                logger.debug(f"[track_{track_id}] posture=sitting | signal=HEAD_BOX_SOFA_SEATING_ZONE")
-                return "sitting"
+            # 1. Furniture Zone Boundary Rule: Y = 180 (Head located below 180px line -> Sitting)
+            if cy >= (self.FURNITURE_Y_BOUNDARY + (self.MATH_CURVE_MARGIN * 10)):
+                raw_posture = "sitting"
             else:
-                logger.debug(f"[track_{track_id}] posture=standing | signal=HEAD_BOX_ELEVATED_STANDING_CROWD")
-                return "standing"
+                raw_posture = "standing"
 
-        # Signal A: Full-Height Standing Body (Person standing upright in room/aisle)
-        if norm_h > 0.52 or (ar is not None and ar < 0.28):
-            posture = "standing"
-            signal = "FULL_HEIGHT_STANDING"
-        # Signal B: Universal Furniture-Occluded Standing Body (Person standing behind desk/table/counter)
-        elif (norm_y1 < 0.25) and (norm_y2 < 0.48) and (norm_h < 0.32) and (ar is not None and ar < 0.65):
-            posture = "standing"
-            signal = "UNIVERSAL_DESK_OCCLUDED_STANDING"
-        # Signal C: Model Class ID with Aspect Ratio Bounds
-        elif class_id == 1 and (ar is None or ar < 0.65):
-            posture = "standing"
-            signal = "MODEL_CLASS_STANDING"
-        elif class_id == 0:
-            if ar is not None and ar < 0.30:
-                posture = "standing"
-                signal = "MODEL_SITTING_OVERRIDDEN_BY_EXTREMELY_TALL_AR"
-            else:
-                posture = "sitting"
-                signal = "MODEL_CLASS_SITTING"
-        elif ar is not None:
-            if ar < 0.35:
-                posture = "standing"
-                signal = "GEOMETRY_ASPECT_RATIO_TALL"
-            else:
-                posture = "sitting"
-                signal = "GEOMETRY_ASPECT_RATIO_WIDE"
+            # 2. Physical Hysteresis Movement Rule: Must move vertically by > 40px to flip posture
+            if track_id is not None:
+                t_key = str(track_id)
+                if t_key in self.track_state:
+                    prev_state = self.track_state[t_key]
+                    prev_cy = prev_state.get('last_cy', cy)
+                    prev_posture = prev_state.get('posture', raw_posture)
 
-        logger.debug(f"[track_{track_id}] posture={posture} | signal={signal} | class_id={class_id} | ar={round(ar, 2) if ar else None}")
-        return posture
+                    if abs(cy - prev_cy) < self.HYSTERESIS_DELTA_Y and raw_posture != prev_posture:
+                        # Lock in previous posture until 40px physical movement threshold is exceeded
+                        raw_posture = prev_posture
+
+                    self.track_state[t_key] = {'last_cy': cy, 'posture': raw_posture}
+                else:
+                    self.track_state[t_key] = {'last_cy': cy, 'posture': raw_posture}
+
+            return raw_posture
 
         # 3. Keypoints Pose Fallback
         if keypoints and len(keypoints) >= 17:

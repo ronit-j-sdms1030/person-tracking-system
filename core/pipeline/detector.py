@@ -137,24 +137,26 @@ class Detector:
                         })
         # 1. Primary Head Detection Model: RT-DETR Head Model (retr detr head / rtdetr-custom.pt)
         primary_dets = []
+        # 1. Primary Head Detection Model: YOLOH Model (yoloh.pt / rtdetr-custom.pt)
+        primary_dets = []
         if self.body_model:
             try:
                 with torch.inference_mode():
                     if track:
-                        results = self.body_model.track(frame, conf=0.40, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                        results = self.body_model.track(frame, conf=0.66, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                     else:
-                        results = self.body_model(frame, conf=0.40, imgsz=512, verbose=False)
+                        results = self.body_model(frame, conf=0.66, imgsz=640, verbose=False)
                 primary_dets = self._parse_results(results)
             except Exception as e:
-                logger.warning(f"RT-DETR primary head detection error, falling back to YOLO: {e}")
+                logger.warning(f"Primary head detection error, falling back to YOLO: {e}")
 
         # 2. Fallback Head Detection Model: Fine-Tuned YOLO Head Model (headmodel.pt)
         if not primary_dets and self.head_model:
             with torch.inference_mode():
                 if track:
-                    head_results = self.head_model.track(frame, conf=0.40, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                    head_results = self.head_model.track(frame, conf=0.66, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                 else:
-                    head_results = self.head_model(frame, conf=0.40, imgsz=512, verbose=False)
+                    head_results = self.head_model(frame, conf=0.66, imgsz=640, verbose=False)
             primary_dets = self._parse_results(head_results)
 
         if primary_dets:
@@ -165,7 +167,7 @@ class Detector:
             if getattr(self, "sitting_model", None) is not None:
                 try:
                     with torch.inference_mode():
-                        sit_res = self.sitting_model(frame, conf=0.40, verbose=False)
+                        sit_res = self.sitting_model(frame, conf=0.66, verbose=False)
                     sit_dets = self._parse_results(sit_res)
                     sit_boxes = [s["bbox"] for s in sit_dets if s.get("class_id") == 0]
 
@@ -199,6 +201,18 @@ class Detector:
                 cls_id = int(boxes[i].cls[0]) if boxes[i].cls is not None else 0
                 kpts = result.keypoints[i].data[0].cpu().numpy().tolist() if has_kpts else None
                 
+                w = box[2] - box[0]
+                h = box[3] - box[1]
+                if w <= 0 or h <= 0:
+                    continue
+                aspect_ratio = w / h
+                
+                # User-Specified Head Aspect Ratio (0.5 to 1.5) & Size Limits (12px to 180px)
+                if not (0.5 <= aspect_ratio <= 1.5):
+                    continue
+                if not (12 <= w <= 180 and 12 <= h <= 180):
+                    continue
+
                 track_id = None
                 if boxes[i].id is not None:
                     track_id = int(boxes[i].id[0])
