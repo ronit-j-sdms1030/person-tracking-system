@@ -231,7 +231,8 @@ function renderZone(zoneData) {
 function handleInitialState(data) {
     if (data.main_floor) {
         if (localStorage.getItem('wizard_completed') === 'true' && data.main_floor.cameras && data.main_floor.cameras.length > 0) {
-            revealDashboardPanels(data.main_floor.cameras.length);
+            const savedCount = parseInt(localStorage.getItem('configured_camera_count')) || data.main_floor.cameras.length;
+            revealDashboardPanels(savedCount);
         }
         renderZone(data.main_floor);
     }
@@ -605,7 +606,6 @@ async function submitWizardCameras() {
             alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
             if (typeof loadCustomCamNames === 'function') loadCustomCamNames();
             revealDashboardPanels(result.cameras_added.length);
-            selectCam('both', document.querySelectorAll('.cam-select button')[wizardSelectedCount]);
         }
     } catch(e) {
         alert(`Notice: ${e}`);
@@ -618,7 +618,9 @@ async function submitWizardCameras() {
 }
 
 function revealDashboardPanels(cameraCount) {
+    const count = cameraCount || 1;
     localStorage.setItem('wizard_completed', 'true');
+    localStorage.setItem('configured_camera_count', count);
 
     const wizard = document.getElementById('initial-setup-wizard');
     if (wizard) wizard.style.display = 'none';
@@ -639,28 +641,40 @@ function revealDashboardPanels(cameraCount) {
     const selectDiv = document.getElementById('cam-select');
     if (selectDiv) {
         let navHTML = '';
-        const count = cameraCount || 2;
         for (let i = 1; i <= count; i++) {
-            navHTML += `<button class="${i === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
+            navHTML += `<button class="${i === 1 && count === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
         }
-        navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        if (count > 1) {
+            navHTML += `<button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        }
         selectDiv.innerHTML = navHTML;
+    }
+
+    if (count === 1) {
+        selectCam('1', document.querySelectorAll('.cam-select button')[0]);
+    } else {
+        const buttons = document.querySelectorAll('.cam-select button');
+        const bothBtn = buttons[buttons.length - 1];
+        selectCam('both', bothBtn);
     }
 }
 
 async function launchDemoSampleFeeds() {
+    const count = wizardSelectedCount || 1;
     try {
         const formData = new FormData();
         formData.append('slots', 'cam_door_1');
         formData.append('roles', 'both');
         formData.append('cam_capacities', 25);
-        formData.append('slots', 'cam_room_1');
-        formData.append('roles', 'posture');
-        formData.append('cam_capacities', 25);
+        if (count > 1) {
+            formData.append('slots', 'cam_room_1');
+            formData.append('roles', 'posture');
+            formData.append('cam_capacities', 25);
+        }
 
         const res = await fetch('/upload-cameras', { method: 'POST', body: formData });
         if (res.ok) {
-            revealDashboardPanels(2);
+            revealDashboardPanels(count);
             setTimeout(() => {
                 const v1 = document.getElementById('vid-cam_door_1');
                 const v2 = document.getElementById('vid-cam_room_1');
@@ -669,6 +683,6 @@ async function launchDemoSampleFeeds() {
             }, 500);
         }
     } catch(e) {
-        revealDashboardPanels(2);
+        revealDashboardPanels(count);
     }
 }
