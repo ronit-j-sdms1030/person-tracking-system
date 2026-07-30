@@ -138,9 +138,9 @@ class Detector:
             try:
                 with torch.inference_mode():
                     if track:
-                        results = self.body_model.track(frame, conf=0.15, imgsz=800, persist=True, verbose=False, tracker="bytetrack.yaml")
+                        results = self.body_model.track(frame, conf=0.66, imgsz=800, persist=True, verbose=False, tracker="bytetrack.yaml")
                     else:
-                        results = self.body_model(frame, conf=0.15, imgsz=800, verbose=False)
+                        results = self.body_model(frame, conf=0.66, imgsz=800, verbose=False)
                 primary_dets = self._parse_results(results)
             except Exception as e:
                 logger.warning(f"RT-DETR primary head detection error, falling back to YOLO: {e}")
@@ -149,9 +149,9 @@ class Detector:
         if not primary_dets and self.head_model:
             with torch.inference_mode():
                 if track:
-                    head_results = self.head_model.track(frame, conf=0.15, imgsz=800, persist=True, verbose=False, tracker="bytetrack.yaml")
+                    head_results = self.head_model.track(frame, conf=0.66, imgsz=800, persist=True, verbose=False, tracker="bytetrack.yaml")
                 else:
-                    head_results = self.head_model(frame, conf=0.15, imgsz=800, verbose=False)
+                    head_results = self.head_model(frame, conf=0.66, imgsz=800, verbose=False)
             primary_dets = self._parse_results(head_results)
 
         if primary_dets:
@@ -162,7 +162,7 @@ class Detector:
             if getattr(self, "sitting_model", None) is not None:
                 try:
                     with torch.inference_mode():
-                        sit_res = self.sitting_model(frame, conf=0.15, verbose=False)
+                        sit_res = self.sitting_model(frame, conf=0.66, verbose=False)
                     sit_dets = self._parse_results(sit_res)
                     sit_boxes = [s["bbox"] for s in sit_dets if s.get("class_id") == 0]
 
