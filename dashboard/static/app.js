@@ -158,7 +158,7 @@ function ensureCameraCardsExist(cameras) {
             chartsGrid.style.gridTemplateColumns = '1fr';
         } else {
             cam2TrendCard.style.display = 'block';
-            chartsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            chartsGrid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
         }
     }
 
@@ -730,7 +730,7 @@ function revealDashboardPanels(cameraCount) {
             chartsGrid.style.gridTemplateColumns = '1fr';
         } else {
             cam2TrendCard.style.display = 'block';
-            chartsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            chartsGrid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
         }
     }
 
