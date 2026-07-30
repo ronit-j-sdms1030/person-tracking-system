@@ -411,6 +411,8 @@ async function resetData() {
     try {
         const res = await fetch('/reset', { method: 'POST' });
         if (res.ok) {
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.reload();
         }
     } catch (e) {

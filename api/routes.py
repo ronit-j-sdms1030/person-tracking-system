@@ -52,8 +52,11 @@ zones:
             vision_runner.adapters.clear()
         if hasattr(vision_runner, "stopped_cameras"):
             vision_runner.stopped_cameras.clear()
+        if hasattr(vision_runner, "threads"):
+            vision_runner.threads.clear()
 
-    # 3. Clear state manager camera mapping and zone state
+    # 3. Reload config_loader & reset state manager
+    config_loader.load_and_validate()
     state_manager.camera_to_zone.clear()
     state_manager.reset_zone("main_floor")
     

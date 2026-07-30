@@ -31,36 +31,18 @@ vision_runner = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup - Ensure site_config.yaml exists with camera feeds
+    # Startup - Ensure site_config.yaml exists
     config_file = "config/site_config.yaml"
     os.makedirs("config", exist_ok=True)
-    
-    sample_office = "data/sample_videos/VIDEO-2026-07-28-15-36-24.mp4"
-    sample_bus = "data/sample_videos/CCTV_footage_school_bus_students_202607281532.mp4"
-    office_src = sample_office if os.path.exists(sample_office) else "data/sample_videos/VIDEO-2026-07-28-15-36-24 (1).mp4"
-    bus_src = sample_bus if os.path.exists(sample_bus) else "data/sample_videos/test.mp4"
-
-    # Always ensure default sample video streams exist in config
-    baseline_yaml = f"""site_id: stark_demo_site
+    if not os.path.exists(config_file):
+        baseline_yaml = """site_id: stark_demo_site
 zones:
 - zone_id: main_floor
   capacity_max: 25
   capacity_sitting_max: 15
   capacity_standing_max: 10
-  cameras:
-  - camera_id: cam_door_1
-    adapter: file
-    source: {office_src}
-    role: both
-    frame_skip: 1
-    cooldown_seconds: 2.0
-  - camera_id: cam_room_1
-    adapter: file
-    source: {bus_src}
-    role: posture
-    frame_skip: 1
+  cameras: []
 """
-    if not os.path.exists(config_file) or os.path.getsize(config_file) == 0:
         with open(config_file, "w") as f:
             f.write(baseline_yaml)
 
@@ -68,7 +50,7 @@ zones:
     
     # Start the actual Vision Pipeline!
     global vision_runner
-    vision_runner = VisionRunner("config/site_config.yaml", state_manager.event_queue)
+    vision_runner = VisionRunner(config_file, state_manager.event_queue)
     vision_runner.start()
     print("State manager and Vision Pipeline started.")
     
