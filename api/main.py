@@ -71,9 +71,12 @@ app.include_router(ws_router)
 os.makedirs("dashboard/static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
 
+import uuid
+SERVER_SESSION_SECRET = str(uuid.uuid4())
+
 @app.get("/")
 def serve_dashboard(request: Request):
-    if request.cookies.get("session") != "authenticated":
+    if request.cookies.get("session") != SERVER_SESSION_SECRET:
         return RedirectResponse("/login")
     return FileResponse("dashboard/index.html")
 
@@ -85,7 +88,7 @@ def serve_login():
 def login(response: Response, username: str = Form(...), password: str = Form(...)):
     if username == "admin" and password == "password":
         response = Response(status_code=200)
-        response.set_cookie(key="session", value="authenticated", httponly=True)
+        response.set_cookie(key="session", value=SERVER_SESSION_SECRET, httponly=True)
         return response
     return Response(status_code=401)
 

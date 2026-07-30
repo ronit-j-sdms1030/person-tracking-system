@@ -250,9 +250,7 @@
   <div id="initial-setup-wizard" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:32px; margin-bottom:25px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.35); transition:all 0.3s ease;">
     <div style="font-size:42px; margin-bottom:12px;">🎥</div>
     <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin:0 0 8px 0; color:var(--text);">Multi-Camera System Configuration</h2>
-    <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitoring?</p>
-
-    <!-- Step 1: Camera Count Selection Provisions -->
+    <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitor    <!-- Step 1: Uncapped Camera Count Selection Provisions -->
     <div style="display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px;">
       <button class="wizard-choice-btn" onclick="configureWizardSlots(1)">
         <span>📹 1 Camera</span>
@@ -266,6 +264,11 @@
       <button class="wizard-choice-btn" onclick="configureWizardSlots(4)">
         <span>🎥 4 Cameras</span>
       </button>
+      <div style="display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 14px; border-radius:12px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Custom:</span>
+        <input type="number" id="custom-cam-input" min="1" max="50" value="5" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:5px 8px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:55px; outline:none;">
+        <button onclick="configureWizardSlots(parseInt(document.getElementById('custom-cam-input').value) || 5)" style="background:var(--orange); color:#fff; border:none; padding:6px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set</button>
+      </div>
     </div>
 
     <!-- Step 2: Camera Upload & Slot Assignment Panel -->
@@ -285,11 +288,9 @@
     </div>
   </div>
 
-  <div class="cam-select-bar">
-    <div class="cam-select">
-      <button class="active" onclick="selectCam('1', this)">Cam 1</button>
-      <button onclick="selectCam('2', this)">Cam 2</button>
-      <button onclick="selectCam('both', this)">Both (Pairs of 2)</button>
+  <div class="cam-select-bar" id="cam-select-bar" style="display:none;">
+    <div class="cam-select" id="cam-select">
+      <!-- Dynamic camera view buttons generated dynamically -->
     </div>
 
     <!-- Provision to set how many cameras user wants per row -->
@@ -304,98 +305,24 @@
     </div>
   </div>
 
-  <div class="cam-grid cols-1" id="cam-grid">
-
-    <div class="cam-card" data-cam="1">
-      <div class="cam-video-col">
-        <div class="cam-head">
-          <div class="header">
-            <h2>CAM 1 <span class="tag">doorway</span></h2>
-            <div style="display:flex; align-items:center; gap:12px;">
-              <button onclick="deleteCamera('cam_door_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
-              <div class="status-indicator" id="c1-status">
-                <div class="dot"></div>
-                <span>Stale</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="video-panel">
-          <div class="caption-tag">doorway view</div>
-          <img id="vid-cam_door_1" data-src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 1 feed">
-          <!-- Custom Playback Controls -->
-          <div class="playback-controls">
-            <button onclick="togglePlay('cam_door_1', this)" class="ctrl-btn" title="Pause">⏸</button>
-            <input type="range" class="seek-bar" id="seek-cam_door_1" min="0" max="100" value="0" oninput="seekVideo('cam_door_1', this.value)" title="Scrub Timeline">
-            <button onclick="restartCamera('cam_door_1')" class="ctrl-btn" title="Restart">↺</button>
-          </div>
-        </div>
-      </div>
-      <div class="stats-col">
-        <div class="stat-grid">
-          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c1-cap">0</div><div class="lbl">Total cap.</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c1-present">0</div><div class="lbl">Present</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c1-remaining">0</div><div class="lbl">Remaining</div></div>
-          
-          <div class="chip c1-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c1-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c1-sitting-rem">15</span> rem)</div></div>
-          <div class="chip wide c1-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c1-standing-rem">10</span> rem)</div><div class="num"><span id="c1-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-standing-max">10</span></span></div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="cam-card" data-cam="2" style="display:none;">
-      <div class="cam-video-col">
-        <div class="cam-head">
-          <div class="header">
-            <h2>CAM 2 <span class="tag">interior</span></h2>
-            <div style="display:flex; align-items:center; gap:12px;">
-              <button onclick="deleteCamera('cam_room_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
-              <div class="status-indicator" id="c2-status">
-                <div class="dot"></div>
-                <span>Stale</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="video-panel">
-          <div class="caption-tag">interior view</div>
-          <img id="vid-cam_room_1" data-src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover; display:none;" alt="CAM 2 feed">
-          <!-- Custom Playback Controls -->
-          <div class="playback-controls">
-            <button onclick="togglePlay('cam_room_1', this)" class="ctrl-btn" title="Pause">⏸</button>
-            <input type="range" class="seek-bar" id="seek-cam_room_1" min="0" max="100" value="0" oninput="seekVideo('cam_room_1', this.value)" title="Scrub Timeline">
-            <button onclick="restartCamera('cam_room_1')" class="ctrl-btn" title="Restart">↺</button>
-          </div>
-        </div>
-      </div>
-      <div class="stats-col">
-        <div class="stat-grid">
-          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c2-cap">0</div><div class="lbl">Total cap.</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">0</div><div class="lbl">Present</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">0</div><div class="lbl">Remaining</div></div>
-
-          <div class="chip c2-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c2-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c2-sitting-rem">15</span> rem)</div></div>
-          <div class="chip wide c2-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c2-standing-rem">10</span> rem)</div><div class="num"><span id="c2-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-standing-max">10</span></span></div></div>
-        </div>
-      </div>
-    </div>
-
+  <div class="cam-grid cols-2" id="cam-grid" style="display:none;">
+    <!-- Dynamic camera cards constructed here -->
   </div>
 
-  <div class="summary-bar" id="summary-bar">
-    <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">6</b> present · <b id="s-c1-remaining">34</b> remain</div>
+  <div class="summary-bar" id="summary-bar" style="display:none;">
+    <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">0</b> present · <b id="s-c1-remaining">25</b> remain</div>
     <div class="divider" id="sum-div" style="display:none;"></div>
-    <div class="grp" id="sum-cam2" style="display:none;">CAM 2 <b id="s-c2-present">6</b> present · <b id="s-c2-remaining">34</b> remain</div>
+    <div class="grp" id="sum-cam2" style="display:none;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
     <div class="spacer"></div>
-    <div class="pill" id="s-total-occupancy">total 6</div>
-    <div class="pill" id="s-total-entered" style="display:none;">entered 175</div>
+    <div class="pill" id="s-total-occupancy">total 0</div>
+    <div class="pill" id="s-total-entered" style="display:none;">entered 0</div>
   </div>
 
-  <!-- Real-Time Peak Trends & Analytics Chart Panel -->
-  <div class="analytics-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+  <!-- Real-Time Peak Trends & Analytics Chart Panel (2 Graphs Side-by-Side) -->
+  <div class="analytics-panel" id="analytics-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
       <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
-        <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Minute-by-Minute Occupancy Trends & Deep Analytics</h3>
+        <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Per-Camera Minute-by-Minute Occupancy Analytics</h3>
         <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green); background:var(--chip-green-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
           Peak: <b id="peak-headcount-val">0</b>
         </span>
@@ -414,8 +341,20 @@
       </a>
     </div>
     
-    <div style="width:100%; height:200px; position:relative;">
-      <canvas id="occupancyTrendChart"></canvas>
+    <!-- 2 Side-by-Side Graphs -->
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; margin-top:15px;">
+      <div style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:15px;">
+        <h4 style="margin:0 0 10px 0; font-family:'Space Grotesk',sans-serif; font-size:13.5px; color:var(--text);">📊 CAM 1 Occupancy Trend (Min-by-Min)</h4>
+        <div style="width:100%; height:180px;">
+          <canvas id="cam1TrendChart"></canvas>
+        </div>
+      </div>
+      <div style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:15px;">
+        <h4 style="margin:0 0 10px 0; font-family:'Space Grotesk',sans-serif; font-size:13.5px; color:var(--text);">📊 CAM 2 Occupancy Trend (Min-by-Min)</h4>
+        <div style="width:100%; height:180px;">
+          <canvas id="cam2TrendChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 

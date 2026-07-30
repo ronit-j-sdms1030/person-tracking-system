@@ -16,22 +16,22 @@ function syncTotalCap() {
     if (totalEl) totalEl.value = sitVal + standVal;
 }
 
-let trendChart = null;
+let cam1TrendChart = null;
+let cam2TrendChart = null;
 let maxPeakHeadcount = 0;
 
-function initTrendChart() {
-    const ctx = document.getElementById('occupancyTrendChart');
-    if (!ctx) return;
-    
-    trendChart = new Chart(ctx, {
+function createSingleChart(canvasId, color, bgColor) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    return new Chart(ctx, {
         type: 'line',
         data: {
             labels: [],
             datasets: [{
                 label: 'Present Headcount',
                 data: [],
-                borderColor: '#3ECF8E',
-                backgroundColor: 'rgba(62, 207, 142, 0.12)',
+                borderColor: color,
+                backgroundColor: bgColor,
                 borderWidth: 2.5,
                 fill: true,
                 tension: 0.35,
@@ -53,34 +53,36 @@ function initTrendChart() {
                     ticks: { color: '#8890A0', font: { family: 'JetBrains Mono', size: 10 } }
                 }
             },
-            plugins: {
-                legend: { display: false }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 }
 
+function initTrendCharts() {
+    if (!cam1TrendChart) cam1TrendChart = createSingleChart('cam1TrendChart', '#3ECF8E', 'rgba(62, 207, 142, 0.12)');
+    if (!cam2TrendChart) cam2TrendChart = createSingleChart('cam2TrendChart', '#38BDF8', 'rgba(56, 189, 248, 0.12)');
+}
+
 let lastRecordedMinute = null;
-let currentMinuteSamples = [];
+let cam1Samples = [];
+let cam2Samples = [];
 let totalHeadcountSum = 0;
 let totalSampleCount = 0;
 let peakTimeRecorded = "--:--";
 
-function updateTrendChart(present, cap) {
-    if (!trendChart) initTrendChart();
-    if (!trendChart) return;
+function updateTrendCharts(c1Count, c2Count, totalPresent, cap) {
+    initTrendCharts();
     
     const now = new Date();
     const minuteStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    // Accumulate samples for average & peak metrics
-    currentMinuteSamples.push(present);
-    totalHeadcountSum += present;
+    cam1Samples.push(c1Count);
+    cam2Samples.push(c2Count);
+    totalHeadcountSum += totalPresent;
     totalSampleCount++;
     
-    // Update live peak headcount & peak time
-    if (present > maxPeakHeadcount) {
-        maxPeakHeadcount = present;
+    if (totalPresent > maxPeakHeadcount) {
+        maxPeakHeadcount = totalPresent;
         peakTimeRecorded = minuteStr;
         const peakEl = document.getElementById('peak-headcount-val');
         if (peakEl) peakEl.textContent = maxPeakHeadcount;
@@ -88,34 +90,43 @@ function updateTrendChart(present, cap) {
         if (peakTimeEl) peakTimeEl.textContent = peakTimeRecorded;
     }
 
-    // Update Average Headcount
     const avgHeadcount = (totalHeadcountSum / Math.max(1, totalSampleCount)).toFixed(1);
     const avgEl = document.getElementById('avg-headcount-val');
     if (avgEl) avgEl.textContent = avgHeadcount;
 
-    // Update Utilization Rate %
     if (cap && cap > 0) {
-        const utilPct = Math.min(100, Math.round((present / cap) * 100));
+        const utilPct = Math.min(100, Math.round((totalPresent / cap) * 100));
         const utilEl = document.getElementById('utilization-rate-val');
         if (utilEl) utilEl.textContent = `${utilPct}%`;
     }
 
-    // Push Minute-by-Minute data point when a new minute begins or on first render
     if (lastRecordedMinute !== minuteStr) {
         lastRecordedMinute = minuteStr;
         
-        // Calculate average for the minute bucket
-        const minuteAvg = Math.round(currentMinuteSamples.reduce((a, b) => a + b, 0) / Math.max(1, currentMinuteSamples.length));
-        currentMinuteSamples = [];
+        const c1Avg = Math.round(cam1Samples.reduce((a, b) => a + b, 0) / Math.max(1, cam1Samples.length));
+        const c2Avg = Math.round(cam2Samples.reduce((a, b) => a + b, 0) / Math.max(1, cam2Samples.length));
+        cam1Samples = [];
+        cam2Samples = [];
         
-        if (trendChart.data.labels.length > 30) {
-            trendChart.data.labels.shift();
-            trendChart.data.datasets[0].data.shift();
+        if (cam1TrendChart) {
+            if (cam1TrendChart.data.labels.length > 30) {
+                cam1TrendChart.data.labels.shift();
+                cam1TrendChart.data.datasets[0].data.shift();
+            }
+            cam1TrendChart.data.labels.push(minuteStr);
+            cam1TrendChart.data.datasets[0].data.push(c1Avg);
+            cam1TrendChart.update('none');
         }
-        
-        trendChart.data.labels.push(minuteStr);
-        trendChart.data.datasets[0].data.push(minuteAvg);
-        trendChart.update('none');
+
+        if (cam2TrendChart) {
+            if (cam2TrendChart.data.labels.length > 30) {
+                cam2TrendChart.data.labels.shift();
+                cam2TrendChart.data.datasets[0].data.shift();
+            }
+            cam2TrendChart.data.labels.push(minuteStr);
+            cam2TrendChart.data.datasets[0].data.push(c2Avg);
+            cam2TrendChart.update('none');
+        }
     }
 }
 
@@ -130,7 +141,17 @@ function renderZone(zoneData) {
     const entered = zoneData.entered_today;
     const exited = zoneData.exited_today;
 
-    updateTrendChart(present, cap);
+    let c1Count = 0;
+    let c2Count = 0;
+
+    if (zoneData.cameras) {
+        zoneData.cameras.forEach(cam => {
+            if (cam.camera_id === 'cam_door_1') c1Count = cam.current_occupancy || 0;
+            else if (cam.camera_id === 'cam_room_1') c2Count = cam.current_occupancy || 0;
+        });
+    }
+
+    updateTrendCharts(c1Count, c2Count, present, cap);
 
     // Loop through cameras to update their specific stats
     if (zoneData.cameras) {
@@ -611,8 +632,8 @@ async function submitWizardCameras() {
         if (res.ok) {
             const result = await res.json();
             alert(`✅ Successfully configured and launched ${result.cameras_added.length} camera feed(s)!`);
-            document.getElementById('initial-setup-wizard').style.display = 'none';
-            selectCam('both', document.querySelectorAll('.cam-select button')[2]);
+            revealDashboardPanels(result.cameras_added.length);
+            selectCam('both', document.querySelectorAll('.cam-select button')[wizardSelectedCount]);
         }
     } catch(e) {
         alert(`Notice: ${e}`);
@@ -624,7 +645,32 @@ async function submitWizardCameras() {
     }
 }
 
-function launchDemoSampleFeeds() {
+function revealDashboardPanels(cameraCount) {
     document.getElementById('initial-setup-wizard').style.display = 'none';
+    const selectBar = document.getElementById('cam-select-bar');
+    const grid = document.getElementById('cam-grid');
+    const summary = document.getElementById('summary-bar');
+    const analytics = document.getElementById('analytics-panel');
+    
+    if (selectBar) selectBar.style.display = 'flex';
+    if (grid) grid.style.display = 'grid';
+    if (summary) summary.style.display = 'flex';
+    if (analytics) analytics.style.display = 'block';
+
+    // Build single-camera view navigation buttons for all configured cameras
+    const selectDiv = document.getElementById('cam-select');
+    if (selectDiv) {
+        let navHTML = '';
+        const count = cameraCount || 2;
+        for (let i = 1; i <= count; i++) {
+            navHTML += `<button class="${i === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
+        }
+        navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        selectDiv.innerHTML = navHTML;
+    }
+}
+
+function launchDemoSampleFeeds() {
+    revealDashboardPanels(2);
     selectCam('both', document.querySelectorAll('.cam-select button')[2]);
 }
