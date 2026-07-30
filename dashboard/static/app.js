@@ -131,24 +131,37 @@ function updateTrendCharts(c1Count, c2Count, totalPresent, cap) {
 }
 
 function ensureCameraCardsExist(cameras) {
-    if (!cameras || cameras.length === 0) return;
+    if (!cameras) return;
     const grid = document.getElementById('cam-grid');
     const selectDiv = document.getElementById('cam-select');
     const summaryBar = document.getElementById('summary-bar');
     if (!grid) return;
 
-    // 1. Ensure camera select bar buttons exist for all cameras
-    if (selectDiv && selectDiv.querySelectorAll('button').length < cameras.length + 1) {
+    const count = cameras.length;
+
+    // 1. Remove extra camera cards if number of active cameras decreased
+    const existingCards = grid.querySelectorAll('.cam-card');
+    existingCards.forEach((card, idx) => {
+        const num = idx + 1;
+        if (num > count) {
+            card.remove();
+        }
+    });
+
+    // 2. Update select bar buttons
+    if (selectDiv) {
         let navHTML = '';
         cameras.forEach((cam, i) => {
             const num = i + 1;
             navHTML += `<button onclick="selectCam('${num}', this)">Cam ${num}</button>`;
         });
-        navHTML += `<button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        if (count > 1) {
+            navHTML += `<button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+        }
         selectDiv.innerHTML = navHTML;
     }
 
-    // 2. Ensure a camera card exists in cam-grid for each camera
+    // 3. Ensure a camera card exists in cam-grid for each active camera
     cameras.forEach((cam, i) => {
         const num = i + 1;
         const camId = cam.camera_id;
@@ -200,8 +213,8 @@ function ensureCameraCardsExist(cameras) {
         }
     });
 
-    // 3. Ensure summary bar groups exist for all cameras
-    if (summaryBar && summaryBar.querySelectorAll('.grp').length < cameras.length) {
+    // 4. Update summary bar groups
+    if (summaryBar) {
         let sumHTML = '';
         cameras.forEach((cam, i) => {
             const num = i + 1;

@@ -121,20 +121,23 @@ async def upload_cameras(
 
         from api.main import vision_runner
 
+        # Determine target camera IDs in this upload batch
+        new_cam_ids = []
+        for i, file in enumerate(files):
+            if slots and i < len(slots):
+                new_cam_ids.append(slots[i])
+            else:
+                new_cam_ids.append("cam_door_1" if i == 0 else ("cam_room_1" if i == 1 else f"cam_upload_{i+1}"))
+
+        # Stop and remove old cameras that are not in the new batch
+        removed_ids = config_loader.clear_cameras_except(new_cam_ids)
+        if vision_runner:
+            for rid in removed_ids:
+                vision_runner.stop_camera(rid)
+
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
-            
-            # Use explicit UI slot if provided, else fallback to index
-            if slots and i < len(slots):
-                cam_id = slots[i]
-            else:
-                if i == 0:
-                    cam_id = "cam_door_1"
-                elif i == 1:
-                    cam_id = "cam_room_1"
-                else:
-                    cam_id = f"cam_upload_{i+1}"
-                
+            cam_id = new_cam_ids[i]
             dest = f"data/sample_videos/{file.filename}"
 
             with open(dest, "wb") as f:
@@ -173,7 +176,7 @@ async def upload_cameras(
 
             # Register camera into the live state_manager so its events update the dashboard
             default_zone = list(state_manager.zones.keys())[0] if state_manager.zones else None
-            if default_zone and cam_id not in state_manager.camera_to_zone:
+            if default_zone:
                 state_manager.camera_to_zone[cam_id] = default_zone
 
         return {"status": "ok", "cameras_added": added}

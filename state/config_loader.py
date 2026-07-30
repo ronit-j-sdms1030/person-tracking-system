@@ -123,7 +123,23 @@ class ConfigLoader:
         if len(zone["cameras"]) < original_len:
             self._save()
             return True
-        return False
+    def clear_cameras_except(self, keep_ids: list):
+        if not self.raw_data:
+            with open(self.config_path, "r") as f:
+                self.raw_data = yaml.safe_load(f)
+        zone = self.raw_data["zones"][0]
+        cams = zone.get("cameras", [])
+        removed_ids = [c["camera_id"] for c in cams if c["camera_id"] not in keep_ids]
+        zone["cameras"] = [c for c in cams if c["camera_id"] in keep_ids]
+        self._save()
+        from state.event_queue import state_manager
+        for rid in removed_ids:
+            if rid in state_manager.camera_to_zone:
+                del state_manager.camera_to_zone[rid]
+            for z in state_manager.zones.values():
+                if rid in z.camera_stats:
+                    del z.camera_stats[rid]
+        return removed_ids
 
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if not self.raw_data:
