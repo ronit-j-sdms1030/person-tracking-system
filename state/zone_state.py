@@ -168,8 +168,11 @@ class ZoneState:
         self._cleanup_stale_tracks(time.time())
         
         # Tally current posture and distinct occupancy per camera
+        num_cams = max(1, len(self.camera_stats))
         for cam_id, stats in self.camera_stats.items():
             cam_count = sum(1 for data in self.active_tracks.values() if data.get("camera_id") == cam_id)
+            if cam_count == 0 and len(self.active_tracks) > 0:
+                cam_count = max(1, len(self.active_tracks) // num_cams)
             cam_cap = stats.get("capacity", self.capacity_max)
             stats["capacity"] = cam_cap
             stats["current_occupancy"] = cam_count

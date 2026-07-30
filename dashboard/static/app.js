@@ -236,7 +236,10 @@ function renderZone(zoneData) {
     if (zoneData.cameras) {
         zoneData.cameras.forEach((cam, i) => {
             const num = i + 1;
-            const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : 0;
+            let camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : 0;
+            if (camPresent === 0 && present > 0) {
+                camPresent = Math.round(present / Math.max(1, zoneData.cameras.length));
+            }
             const camCap = cam.capacity !== undefined ? cam.capacity : cap;
             const camRemain = Math.max(0, camCap - camPresent);
 
