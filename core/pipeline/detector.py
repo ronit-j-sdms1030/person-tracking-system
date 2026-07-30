@@ -126,48 +126,36 @@ class Detector:
                             "class_id": 0,
                             "track_id": i + 1
                         })
-        elif self.head_model:
-            if track:
-                head_results = self.head_model.track(frame, conf=0.24, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
-            else:
-                head_results = self.head_model(frame, conf=0.24, imgsz=512, verbose=False)
+        # 1. Primary Head Detection Model: RT-DETR Head Model (retr detr head / rtdetr-custom.pt)
+        if self.body_model:
+            try:
+                with torch.inference_mode():
+                    if track:
+                        results = self.body_model.track(frame, conf=0.24, imgsz=640, persist=True, verbose=False, tracker="bytetrack.yaml")
+                    else:
+                        results = self.body_model(frame, conf=0.24, imgsz=640, verbose=False)
+                dets = self._parse_results(results)
+                if dets:
+                    for d in dets:
+                        d["head_bbox"] = d["bbox"]
+                    return dets
+            except Exception as e:
+                logger.warning(f"RT-DETR primary head detection error, falling back to YOLO: {e}")
+
+        # 2. Fallback Head Detection Model: Fine-Tuned YOLO Head Model (headmodel.pt)
+        if self.head_model:
+            with torch.inference_mode():
+                if track:
+                    head_results = self.head_model.track(frame, conf=0.24, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
+                else:
+                    head_results = self.head_model(frame, conf=0.24, imgsz=512, verbose=False)
             head_detections = self._parse_results(head_results)
+            if head_detections:
+                for hd in head_detections:
+                    hd["head_bbox"] = hd["bbox"]
+                return head_detections
 
-            # Fuse RT-DETR posture predictions (rtdetr-custom.pt) with head detections if body model exists
-            if self.body_model and head_detections:
-                try:
-                    with torch.inference_mode():
-                        body_results = self.body_model(frame, conf=0.24, verbose=False)
-                    body_dets = self._parse_results(body_results)
-                    sitting_boxes = [b["bbox"] for b in body_dets if b.get("class_id") == 0]
-                    standing_boxes = [b["bbox"] for b in body_dets if b.get("class_id") == 1]
-                    
-                    for hd in head_detections:
-                        hb = hd["bbox"]
-                        cx, cy = (hb[0] + hb[2]) / 2.0, (hb[1] + hb[3]) / 2.0
-                        # Check if head center lies inside a sitting RT-DETR body box
-                        is_sitting = any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in sitting_boxes)
-                        is_standing = any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in standing_boxes)
-                        
-                        if is_sitting:
-                            hd["class_id"] = 0 # Explicit Sitting from RT-DETR
-                        elif is_standing:
-                            hd["class_id"] = 1 # Explicit Standing from RT-DETR
-                except Exception as e:
-                    logger.debug(f"RT-DETR posture fusion error: {e}")
-
-        if head_detections:
-            for hd in head_detections:
-                hd["head_bbox"] = hd["bbox"]  # Exact head bounding box from fine-tuned head model
-            return head_detections
-
-        # Fallback to RT-DETR body model if head_model is missing
-        classes = [0] if self.is_fallback else [0, 1]
-        if track:
-            results = self.body_model.track(frame, classes=classes, conf=self.conf_thresh, imgsz=640, persist=True, verbose=False, tracker="bytetrack.yaml")
-        else:
-            results = self.body_model(frame, classes=classes, conf=self.conf_thresh, imgsz=640, verbose=False)
-        return self._parse_results(results)
+        return []
 
     def _parse_results(self, results) -> List[Dict[str, Any]]:
         detections = []
