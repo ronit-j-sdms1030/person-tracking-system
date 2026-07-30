@@ -13,7 +13,7 @@ zones:
     cooldown_seconds: 2.0
   - camera_id: cam_room_1
     adapter: file
-    source: data/sample_videos/16213021_2560_1440_30fps.mp4
+    source: data/sample_videos/15873107_1080_1920_25fps.mp4
     role: both
     frame_skip: 1
     cooldown_seconds: 2.0
