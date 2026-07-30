@@ -60,10 +60,20 @@ class PostureLogic:
         signal = "DEFAULT_SITTING"
         posture = "sitting"
 
-        # Standalone Head Box Fallback (If no body box was matched and only head box exists):
-        if norm_h < 0.26:
-            logger.debug(f"[track_{track_id}] posture=sitting | signal=STANDALONE_HEAD_BOX_SITTING")
-            return "sitting"
+        # Standalone Head Box Evaluation:
+        if norm_h < 0.35:
+            # Elevated heads or background standing crowd (norm_y1 < 0.38 or head in upper 38% of frame)
+            # as well as standing people at sides (norm_x1 < 0.25 or norm_x2 > 0.75 when norm_y1 < 0.50)
+            norm_x1 = bbox[0] / fw if bbox else 0.5
+            norm_x2 = bbox[2] / fw if bbox else 0.5
+            
+            # Seated sofa / desk region (middle-lower area, norm_y1 >= 0.38 and norm_y2 <= 0.85, center lounge)
+            if norm_y1 >= 0.38 and (0.20 <= norm_x1 <= 0.80) and norm_y2 >= 0.45:
+                logger.debug(f"[track_{track_id}] posture=sitting | signal=HEAD_BOX_LOWER_SEATING_AREA")
+                return "sitting"
+            else:
+                logger.debug(f"[track_{track_id}] posture=standing | signal=HEAD_BOX_ELEVATED_STANDING_CROWD")
+                return "standing"
 
         # Signal A: Full-Height Standing Body (Person standing upright in room/aisle)
         if norm_h > 0.52 or (ar is not None and ar < 0.28):

@@ -43,17 +43,11 @@ function renderZone(zoneData) {
                 if (elPresent) elPresent.textContent = present;
                 if (elRemaining) elRemaining.textContent = remaining;
 
-                // Update role-specific stats
-                // Update all stats unconditionally per user request
-                const elEntered = document.getElementById(`${prefix}-entered`);
-                const elExited = document.getElementById(`${prefix}-exited`);
-                if (elEntered) elEntered.textContent = cam.entered_today || 0;
-                if (elExited) elExited.textContent = cam.exited_today || 0;
-                
+                // Update posture stats from zoneData
                 const elSitting = document.getElementById(`${prefix}-sitting`);
                 const elStanding = document.getElementById(`${prefix}-standing`);
-                if (elSitting) elSitting.textContent = cam.sitting || 0;
-                if (elStanding) elStanding.textContent = cam.standing || 0;
+                if (elSitting) elSitting.textContent = zoneData.sitting_count !== undefined ? zoneData.sitting_count : (cam.sitting || 0);
+                if (elStanding) elStanding.textContent = zoneData.standing_count !== undefined ? zoneData.standing_count : (cam.standing || 0);
             }
         });
     }
@@ -177,6 +171,12 @@ setInterval(fetchCameraStatus, 5000);
 fetchCameraStatus();
 
 connectWebSocket();
+
+function syncTotalCap() {
+  const sit = parseInt(document.getElementById('sitting-cap-input').value) || 0;
+  const stand = parseInt(document.getElementById('standing-cap-input').value) || 0;
+  document.getElementById('total-cap-input').value = sit + stand;
+}
 
 // --- Multi-file Upload Logic --- lock role per slot
 document.getElementById('video-files').addEventListener('change', (e) => {
