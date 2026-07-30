@@ -44,9 +44,9 @@ class Detector:
         self.body_model = None
         self.is_fallback = False
 
-        # 1. Primary Model: Custom RT-DETR (rtdetr-custom.pt) for primary headcount & posture tracking
+        # 1. Primary Model: Custom RT-DETR (rtdetr-custom.pt) for primary headcount
         if os.path.exists("rtdetr-custom.pt"):
-            logger.info("Loading Primary Headcount & Posture Model: rtdetr-custom.pt (RT-DETR)")
+            logger.info("Loading Primary Headcount Model: rtdetr-custom.pt (RT-DETR)")
             self.body_model = RTDETR("rtdetr-custom.pt")
         else:
             head_model_path = "yolov8m-head.pt"
@@ -56,6 +56,12 @@ class Detector:
                 urllib.request.urlretrieve("https://huggingface.co/keremberke/yolov8m-nlf-head-detection/resolve/main/best.pt", head_model_path)
             self.body_model = YOLO(head_model_path)
             self.is_fallback = True
+
+        # 1b. Sitting Specialist Model: best (1).pt (rtdetr_sitting_best.pt)
+        self.sitting_model = None
+        if os.path.exists("rtdetr_sitting_best.pt"):
+            logger.info("Loading Sitting Specialist RT-DETR Model: rtdetr_sitting_best.pt (best (1).pt)")
+            self.sitting_model = RTDETR("rtdetr_sitting_best.pt")
 
         # 2. Fine-Tuned Head Detector Model: headmodel.pt (User-Provided Fine-Tuned Head Model)
         if os.path.exists("headmodel.pt"):
@@ -127,6 +133,7 @@ class Detector:
                             "track_id": i + 1
                         })
         # 1. Primary Head Detection Model: RT-DETR Head Model (retr detr head / rtdetr-custom.pt)
+        primary_dets = []
         if self.body_model:
             try:
                 with torch.inference_mode():
@@ -134,26 +141,43 @@ class Detector:
                         results = self.body_model.track(frame, conf=0.24, imgsz=640, persist=True, verbose=False, tracker="bytetrack.yaml")
                     else:
                         results = self.body_model(frame, conf=0.24, imgsz=640, verbose=False)
-                dets = self._parse_results(results)
-                if dets:
-                    for d in dets:
-                        d["head_bbox"] = d["bbox"]
-                    return dets
+                primary_dets = self._parse_results(results)
             except Exception as e:
                 logger.warning(f"RT-DETR primary head detection error, falling back to YOLO: {e}")
 
         # 2. Fallback Head Detection Model: Fine-Tuned YOLO Head Model (headmodel.pt)
-        if self.head_model:
+        if not primary_dets and self.head_model:
             with torch.inference_mode():
                 if track:
                     head_results = self.head_model.track(frame, conf=0.24, imgsz=512, persist=True, verbose=False, tracker="bytetrack.yaml")
                 else:
                     head_results = self.head_model(frame, conf=0.24, imgsz=512, verbose=False)
-            head_detections = self._parse_results(head_results)
-            if head_detections:
-                for hd in head_detections:
-                    hd["head_bbox"] = hd["bbox"]
-                return head_detections
+            primary_dets = self._parse_results(head_results)
+
+        if primary_dets:
+            for d in primary_dets:
+                d["head_bbox"] = d["bbox"]
+
+            # 3. Sitting Specialist RT-DETR Model (best (1).pt): Use exclusively for Sitting posture detection
+            if getattr(self, "sitting_model", None) is not None:
+                try:
+                    with torch.inference_mode():
+                        sit_res = self.sitting_model(frame, conf=0.24, verbose=False)
+                    sit_dets = self._parse_results(sit_res)
+                    sit_boxes = [s["bbox"] for s in sit_dets if s.get("class_id") == 0]
+
+                    for d in primary_dets:
+                        hb = d["bbox"]
+                        cx, cy = (hb[0] + hb[2]) / 2.0, (hb[1] + hb[3]) / 2.0
+                        # Mark class_id = 0 (Sitting) if inside a sitting box from best(1).pt
+                        if any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in sit_boxes):
+                            d["class_id"] = 0 # Sitting
+                        else:
+                            d["class_id"] = 1 # Standing
+                except Exception as e:
+                    logger.debug(f"Sitting specialist RT-DETR error: {e}")
+
+            return primary_dets
 
         return []
 
