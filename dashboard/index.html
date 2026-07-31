@@ -525,12 +525,16 @@
 
  const allCards = document.querySelectorAll('.cam-card');
  const grid = document.getElementById('cam-grid');
+ const activeCount = window.activeCamCount || 1;
 
  if (which === 'both') {
- allCards.forEach(card => card.style.display = '');
+ allCards.forEach((card, idx) => {
+   const camNum = parseInt(card.getAttribute('data-cam')) || (idx + 1);
+   card.style.display = (camNum <= activeCount) ? '' : 'none';
+ });
  const colSelect = document.getElementById('grid-cols-select');
  const selectedCol = colSelect ? colSelect.value : 'cols-2';
- if (grid) grid.className = `cam-grid ${selectedCol}`;
+ if (grid) grid.className = `cam-grid ${activeCount === 1 ? 'cols-1' : selectedCol}`;
  } else {
  allCards.forEach(card => {
  if (card.getAttribute('data-cam') === String(which)) {
