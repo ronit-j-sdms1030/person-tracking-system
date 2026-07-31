@@ -92,7 +92,8 @@ class VisionRunner:
         conf_thresh = cam_config.get("conf_thresh", 0.45)
         selected_model = cam_config.get("selected_model", "rtdetr")
         detector = Detector(model_path=model_path, fallback_model_path=fallback_model, conf_thresh=conf_thresh, selected_model=selected_model)
-        tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 2))
+        # Set tracker patience to 35 frames (approx 3.5 seconds of memory for dropped detections)
+        tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 2), patience=35)
 
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
         posture_logic = PostureLogic() if role in ("posture", "both") else None
