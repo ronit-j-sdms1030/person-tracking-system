@@ -11,7 +11,8 @@ def _patched_signal(signum, handler):
             global vision_runner
             if vision_runner:
                 vision_runner.running = False
-            return handler(*args, **kwargs)
+            if callable(handler):
+                return handler(*args, **kwargs)
         return _original_signal(signum, _wrapper)
     return _original_signal(signum, handler)
 signal.signal = _patched_signal
@@ -69,7 +70,25 @@ app.include_router(ws_router)
 
 # Mount static files for dashboard
 os.makedirs("dashboard/static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
+
+from fastapi import Response as FastAPIResponse
+from starlette.staticfiles import StaticFiles as BaseStaticFiles
+from starlette.types import Scope, Receive, Send
+
+class NoCacheStaticFiles(BaseStaticFiles):
+    """Serve static files with no-cache headers so hard refresh always loads fresh JS/CSS."""
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async def send_with_no_cache(message):
+            if message["type"] == "http.response.start":
+                headers = dict(message.get("headers", []))
+                headers[b"cache-control"] = b"no-store, no-cache, must-revalidate, max-age=0"
+                headers[b"pragma"] = b"no-cache"
+                headers[b"expires"] = b"0"
+                message["headers"] = list(headers.items())
+            await send(message)
+        await super().__call__(scope, receive, send_with_no_cache)
+
+app.mount("/static", NoCacheStaticFiles(directory="dashboard/static"), name="static")
 
 import uuid
 SESSION_SECRET_FILE = ".session_secret"
@@ -91,7 +110,14 @@ else:
 def serve_dashboard(request: Request):
     if request.cookies.get("session") != SERVER_SESSION_SECRET:
         return RedirectResponse("/login")
-    return FileResponse("dashboard/index.html")
+    return FileResponse(
+        "dashboard/index.html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 @app.get("/login")
 def serve_login():

@@ -7,549 +7,549 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  :root{
-    --bg:#0F1216; --panel:#161B22; --panel-2:#12161C; --panel-border:#242B36;
-    --text:#EDEFF3; --muted:#8890A0;
-    --blue:#5B8DEF; --green:#3ECF8E; --amber:#F2B84B; --purple:#B387F5; --red:#F0553F;
-    --orange:#E8622C;
-    --chip-blue-bg:rgba(91,141,239,0.14); --chip-green-bg:rgba(62,207,142,0.14);
-    --chip-amber-bg:rgba(242,184,75,0.14); --chip-purple-bg:rgba(179,135,245,0.14);
-    --chip-red-bg:rgba(240,85,63,0.14);
-  }
-  html.light{
-    --bg:#F4F5F7; --panel:#FFFFFF; --panel-2:#F7F8FA; --panel-border:#E3E6EB;
-    --text:#1B1F27; --muted:#6B7280;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:'Inter',sans-serif; min-height:100vh;
-    transition:background .3s ease, color .3s ease;
-  }
-  .wrap{max-width:1180px; margin:0 auto; padding:26px 24px 50px;}
+ :root{
+ --bg:#0F1216; --panel:#161B22; --panel-2:#12161C; --panel-border:#242B36;
+ --text:#EDEFF3; --muted:#8890A0;
+ --blue:#5B8DEF; --green:#3ECF8E; --amber:#F2B84B; --purple:#B387F5; --red:#F0553F;
+ --orange:#E8622C;
+ --chip-blue-bg:rgba(91,141,239,0.14); --chip-green-bg:rgba(62,207,142,0.14);
+ --chip-amber-bg:rgba(242,184,75,0.14); --chip-purple-bg:rgba(179,135,245,0.14);
+ --chip-red-bg:rgba(240,85,63,0.14);
+ }
+ html.light{
+ --bg:#F4F5F7; --panel:#FFFFFF; --panel-2:#F7F8FA; --panel-border:#E3E6EB;
+ --text:#1B1F27; --muted:#6B7280;
+ }
+ *{box-sizing:border-box;}
+ body{
+ margin:0; background:var(--bg); color:var(--text);
+ font-family:'Inter',sans-serif; min-height:100vh;
+ transition:background .3s ease, color .3s ease;
+ }
+ .wrap{max-width:1180px; margin:0 auto; padding:26px 24px 50px;}
 
-  header{display:flex; align-items:center; gap:6px; margin-bottom:20px;}
-  .logo{
-    width:48px; height:48px; flex-shrink:0;
-  }
-  .logo img{width:100%; height:100%; object-fit:contain;}
-  
-  .brand-text h1{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:21px; margin:0;}
-  .brand-text p{
-    margin:2px 0 0; font-size:10.5px; letter-spacing:0.12em; color:var(--muted);
-    text-transform:uppercase; font-family:'JetBrains Mono',monospace;
-  }
-  header .spacer{flex:1;}
-  .live-pill{
-    font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600;
-    color:var(--green); background:var(--chip-green-bg); padding:6px 14px;
-    border-radius:20px; display:flex; align-items:center; gap:7px; margin-right:12px;
-  }
-  .live-pill i{width:6px;height:6px;border-radius:50%;background:var(--green); animation:pulse 1.8s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.35;}}
+ header{display:flex; align-items:center; gap:6px; margin-bottom:20px;}
+ .logo{
+ width:48px; height:48px; flex-shrink:0;
+ }
+ .logo img{width:100%; height:100%; object-fit:contain;}
+ 
+ .brand-text h1{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:21px; margin:0;}
+ .brand-text p{
+ margin:2px 0 0; font-size:10.5px; letter-spacing:0.12em; color:var(--muted);
+ text-transform:uppercase; font-family:'JetBrains Mono',monospace;
+ }
+ header .spacer{flex:1;}
+ .live-pill{
+ font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600;
+ color:var(--green); background:var(--chip-green-bg); padding:6px 14px;
+ border-radius:20px; display:flex; align-items:center; gap:7px; margin-right:12px;
+ }
+ .live-pill i{width:6px;height:6px;border-radius:50%;background:var(--green); animation:pulse 1.8s infinite;}
+ @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.35;}}
 
-  .toggle{
-    display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
-    background:var(--panel); border:1px solid var(--panel-border);
-    padding:6px 12px 6px 10px; border-radius:20px;
-  }
-  .toggle-track{
-    width:34px; height:18px; border-radius:10px; background:var(--panel-2);
-    border:1px solid var(--panel-border); position:relative; transition:.25s;
-  }
-  .toggle-thumb{
-    position:absolute; top:1px; left:1px; width:14px; height:14px; border-radius:50%;
-    background:var(--orange); transition:.25s;
-  }
-  html.light .toggle-thumb{left:17px;}
-  .toggle span{font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+ .toggle{
+ display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+ background:var(--panel); border:1px solid var(--panel-border);
+ padding:6px 12px 6px 10px; border-radius:20px;
+ }
+ .toggle-track{
+ width:34px; height:18px; border-radius:10px; background:var(--panel-2);
+ border:1px solid var(--panel-border); position:relative; transition:.25s;
+ }
+ .toggle-thumb{
+ position:absolute; top:1px; left:1px; width:14px; height:14px; border-radius:50%;
+ background:var(--orange); transition:.25s;
+ }
+ html.light .toggle-thumb{left:17px;}
+ .toggle span{font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono',monospace;}
 
-  .cam-select-bar{
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:22px;
-  }
-  .cam-select{
-    display:flex; gap:8px;
-    background:var(--panel); border:1px solid var(--panel-border);
-    border-radius:12px; padding:5px; width:fit-content;
-  }
-  .cam-select button{
-    font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600;
-    color:var(--muted); background:transparent; border:none; cursor:pointer;
-    padding:8px 18px; border-radius:8px; transition:.2s;
-  }
-  .cam-select button.active{background:var(--orange); color:#fff;}
-  .cam-select button:not(.active):hover{color:var(--text);}
+ .cam-select-bar{
+ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:22px;
+ }
+ .cam-select{
+ display:flex; gap:8px;
+ background:var(--panel); border:1px solid var(--panel-border);
+ border-radius:12px; padding:5px; width:fit-content;
+ }
+ .cam-select button{
+ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600;
+ color:var(--muted); background:transparent; border:none; cursor:pointer;
+ padding:8px 18px; border-radius:8px; transition:.2s;
+ }
+ .cam-select button.active{background:var(--orange); color:#fff;}
+ .cam-select button:not(.active):hover{color:var(--text);}
 
-  /* Flexible multi-camera grid layout (Pairs of 2 side-by-side) */
-  .cam-grid{display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; margin-bottom:20px; transition:all 0.3s ease;}
-  .cam-grid.cols-1{grid-template-columns: 1fr;}
-  .cam-grid.cols-2{grid-template-columns: repeat(2, 1fr);}
-  .cam-grid.cols-3{grid-template-columns: repeat(3, 1fr);}
-  .cam-grid.cols-4{grid-template-columns: repeat(4, 1fr);}
+ /* Flexible multi-camera grid layout (Pairs of 2 side-by-side) */
+ .cam-grid{display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; margin-bottom:20px; transition:all 0.3s ease;}
+ .cam-grid.cols-1{grid-template-columns: 1fr;}
+ .cam-grid.cols-2{grid-template-columns: repeat(2, 1fr);}
+ .cam-grid.cols-3{grid-template-columns: repeat(3, 1fr);}
+ .cam-grid.cols-4{grid-template-columns: repeat(4, 1fr);}
 
-  @media(max-width:1024px){.cam-grid{grid-template-columns: repeat(2, 1fr);}}
-  @media(max-width:768px){.cam-grid{grid-template-columns: 1fr;}}
+ @media(max-width:1024px){.cam-grid{grid-template-columns: repeat(2, 1fr);}}
+ @media(max-width:768px){.cam-grid{grid-template-columns: 1fr;}}
 
-  .cam-card{
-    background:var(--panel); border:1px solid var(--panel-border);
-    border-radius:14px; padding:16px 18px 18px;
-    display:flex; flex-direction:column; gap:16px; transition:background .3s ease, border-color .3s ease;
-  }
+ .cam-card{
+ background:var(--panel); border:1px solid var(--panel-border);
+ border-radius:14px; padding:16px 18px 18px;
+ display:flex; flex-direction:column; gap:16px; transition:background .3s ease, border-color .3s ease;
+ }
 
-  .cam-video-col{width:100%; flex-shrink:0;}
+ .cam-video-col{width:100%; flex-shrink:0;}
 
-  .cam-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
-  .cam-title{display:flex; align-items:center; gap:9px;}
-  .cam-title b{font-family:'Space Grotesk',sans-serif; font-size:14px; letter-spacing:0.02em;}
-  .cam-title span{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted);}
-  .cam-live{
-    display:flex; align-items:center; gap:6px; font-size:11px; color:var(--green);
-    font-family:'JetBrains Mono',monospace;
-  }
-  .cam-live i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite;}
+ .cam-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+ .cam-title{display:flex; align-items:center; gap:9px;}
+ .cam-title b{font-family:'Space Grotesk',sans-serif; font-size:14px; letter-spacing:0.02em;}
+ .cam-title span{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted);}
+ .cam-live{
+ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--green);
+ font-family:'JetBrains Mono',monospace;
+ }
+ .cam-live i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite;}
 
-  .video-panel{
-    position:relative; width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden;
-    background:
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 3px),
-      linear-gradient(160deg, #1c222c 0%, #0d1015 75%);
-    border:1px solid var(--panel-border);
-  }
-  html.light .video-panel{
-    background:
-      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px),
-      linear-gradient(160deg, #232a35 0%, #12161c 80%);
-  }
-  .caption-tag{
-    position:absolute; bottom:9px; left:11px; font-family:'JetBrains Mono',monospace;
-    font-size:10px; color:rgba(255,255,255,0.65); background:rgba(0,0,0,0.35);
-    padding:2px 7px; border-radius:4px;
-  }
-  .bbox{position:absolute; border:2px solid var(--box-color); border-radius:3px;}
-  .bbox .tag{
-    position:absolute; bottom:-16px; left:0; background:var(--box-color); color:#0d1015;
-    font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700;
-    padding:1px 6px; border-radius:3px; white-space:nowrap;
-  }
+ .video-panel{
+ position:relative; width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden;
+ background:
+ repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 3px),
+ linear-gradient(160deg, #1c222c 0%, #0d1015 75%);
+ border:1px solid var(--panel-border);
+ }
+ html.light .video-panel{
+ background:
+ repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px),
+ linear-gradient(160deg, #232a35 0%, #12161c 80%);
+ }
+ .caption-tag{
+ position:absolute; bottom:9px; left:11px; font-family:'JetBrains Mono',monospace;
+ font-size:10px; color:rgba(255,255,255,0.65); background:rgba(0,0,0,0.35);
+ padding:2px 7px; border-radius:4px;
+ }
+ .bbox{position:absolute; border:2px solid var(--box-color); border-radius:3px;}
+ .bbox .tag{
+ position:absolute; bottom:-16px; left:0; background:var(--box-color); color:#0d1015;
+ font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700;
+ padding:1px 6px; border-radius:3px; white-space:nowrap;
+ }
 
-  /* Stats column placed directly BELOW each camera video card */
-  .stats-col{
-    width:100%; min-width:0;
-  }
-  .stat-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;}
-  .chip{
-    border-radius:10px; padding:14px 14px;
-    background:var(--chip-bg); border:1px solid var(--panel-border);
-  }
-  .chip.wide{grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between;}
-  .chip .num{
-    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px;
-    color:var(--chip-color); font-variant-numeric:tabular-nums;
-  }
-  .chip.wide .num{font-size:19px;}
-  .chip .lbl{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin-top:3px;}
-  .chip.wide .lbl{margin-top:0;}
+ /* Stats column placed directly BELOW each camera video card */
+ .stats-col{
+ width:100%; min-width:0;
+ }
+ .stat-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;}
+ .chip{
+ border-radius:10px; padding:14px 14px;
+ background:var(--chip-bg); border:1px solid var(--panel-border);
+ }
+ .chip.wide{grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between;}
+ .chip .num{
+ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px;
+ color:var(--chip-color); font-variant-numeric:tabular-nums;
+ }
+ .chip.wide .num{font-size:19px;}
+ .chip .lbl{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin-top:3px;}
+ .chip.wide .lbl{margin-top:0;}
 
-  .summary-bar{
-    display:flex; align-items:center; gap:22px; flex-wrap:wrap;
-    background:var(--panel); border:1px solid var(--panel-border); border-radius:12px;
-    padding:14px 20px; font-size:13px;
-  }
-  .summary-bar .grp{display:flex; align-items:center; gap:8px; color:var(--muted);}
-  .summary-bar .grp b{color:var(--text); font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums;}
-  .summary-bar .divider{width:1px; height:16px; background:var(--panel-border);}
-  .summary-bar .spacer{flex:1;}
-  .summary-bar .pill{
-    font-family:'JetBrains Mono',monospace; font-size:11.5px;
-    background:var(--panel-2); border:1px solid var(--panel-border);
-    padding:4px 10px; border-radius:14px; color:var(--text);
-  }
-    
-    .playback-controls {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: linear-gradient(transparent, rgba(0,0,0,0.82));
-      display: flex;
-      align-items: center;
-      padding: 18px 12px 10px;
-      gap: 10px;
-      box-sizing: border-box;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      border-radius: 0 0 10px 10px;
-    }
-    .video-panel:hover .playback-controls { opacity: 1; }
-    .ctrl-btn {
-      background: rgba(232,98,44,0.85);
-      border: none;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-      padding: 5px 8px;
-      border-radius: 6px;
-      transition: background 0.15s, transform 0.1s;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-    .ctrl-btn:hover { background: var(--orange); transform: scale(1.08); }
-    .seek-bar {
-      flex: 1;
-      cursor: pointer;
-      accent-color: var(--orange);
-      height: 4px;
-    }    .wizard-choice-btn {
-      background: var(--panel-2);
-      border: 1px solid var(--panel-border);
-      color: var(--text);
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      padding: 14px 24px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .wizard-choice-btn:hover, .wizard-choice-btn.selected {
-      background: var(--orange);
-      color: #ffffff;
-      border-color: var(--orange);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(232,98,44,0.35);
-    }
+ .summary-bar{
+ display:flex; align-items:center; gap:22px; flex-wrap:wrap;
+ background:var(--panel); border:1px solid var(--panel-border); border-radius:12px;
+ padding:14px 20px; font-size:13px;
+ }
+ .summary-bar .grp{display:flex; align-items:center; gap:8px; color:var(--muted);}
+ .summary-bar .grp b{color:var(--text); font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums;}
+ .summary-bar .divider{width:1px; height:16px; background:var(--panel-border);}
+ .summary-bar .spacer{flex:1;}
+ .summary-bar .pill{
+ font-family:'JetBrains Mono',monospace; font-size:11.5px;
+ background:var(--panel-2); border:1px solid var(--panel-border);
+ padding:4px 10px; border-radius:14px; color:var(--text);
+ }
+ 
+ .playback-controls {
+ position: absolute;
+ bottom: 0;
+ left: 0;
+ width: 100%;
+ background: linear-gradient(transparent, rgba(0,0,0,0.82));
+ display: flex;
+ align-items: center;
+ padding: 18px 12px 10px;
+ gap: 10px;
+ box-sizing: border-box;
+ opacity: 0;
+ transition: opacity 0.25s ease;
+ border-radius: 0 0 10px 10px;
+ }
+ .video-panel:hover .playback-controls { opacity: 1; }
+ .ctrl-btn {
+ background: rgba(232,98,44,0.85);
+ border: none;
+ color: white;
+ cursor: pointer;
+ font-size: 14px;
+ padding: 5px 8px;
+ border-radius: 6px;
+ transition: background 0.15s, transform 0.1s;
+ line-height: 1;
+ flex-shrink: 0;
+ }
+ .ctrl-btn:hover { background: var(--orange); transform: scale(1.08); }
+ .seek-bar {
+ flex: 1;
+ cursor: pointer;
+ accent-color: var(--orange);
+ height: 4px;
+ } .wizard-choice-btn {
+ background: var(--panel-2);
+ border: 1px solid var(--panel-border);
+ color: var(--text);
+ font-family: 'Space Grotesk', sans-serif;
+ font-size: 14px;
+ font-weight: 600;
+ padding: 14px 24px;
+ border-radius: 12px;
+ cursor: pointer;
+ transition: all 0.25s ease;
+ display: inline-flex;
+ align-items: center;
+ gap: 10px;
+ box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+ }
+ .wizard-choice-btn:hover, .wizard-choice-btn.selected {
+ background: var(--orange);
+ color: #ffffff;
+ border-color: var(--orange);
+ transform: translateY(-2px);
+ box-shadow: 0 6px 18px rgba(232,98,44,0.35);
+ }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <header>
-    <div class="logo">
-      <img src="/static/stark.svg" alt="Stark Digital Logo">
-    </div>
-    <div class="brand-text">
-      <h1>Stark Digital</h1>
-      <p>Intelligent · Privacy-First · Live Analytics</p>
-    </div>
-    <div class="spacer"></div>
-    <div class="live-pill"><i></i> <span id="connection-status">Live</span></div>
-    <div class="toggle" onclick="toggleMode()" id="mode-toggle">
-      <span id="mode-label">Light</span>
-      <div class="toggle-track"><div class="toggle-thumb"></div></div>
-    </div>
-    <button onclick="openCameraSetupWizard()" style="background:var(--orange); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:opacity 0.2s;">➕ Add / Set Cameras</button>
-    <button onclick="resetData()" style="background:var(--red); color:#fff; border:none; padding:6px 12px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:opacity 0.2s;">Reset Data</button>
-    <button onclick="window.location.href='/logout'" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 12px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:background 0.2s;">Logout</button>
-  </header>
+ <header>
+ <div class="logo">
+ <img src="/static/stark.svg" alt="Stark Digital Logo">
+ </div>
+ <div class="brand-text">
+ <h1>Stark Digital</h1>
+ <p>Intelligent · Privacy-First · Live Analytics</p>
+ </div>
+ <div class="spacer"></div>
+ <div class="live-pill"><i></i> <span id="connection-status">Live</span></div>
+ <div class="toggle" onclick="toggleMode()" id="mode-toggle">
+ <span id="mode-label">Light</span>
+ <div class="toggle-track"><div class="toggle-thumb"></div></div>
+ </div>
+ <button onclick="openCameraSetupWizard()" style="background:var(--orange); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:opacity 0.2s;"> Add / Set Cameras</button>
+ <button onclick="resetData()" style="background:var(--red); color:#fff; border:none; padding:6px 12px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:opacity 0.2s;">Reset Data</button>
+ <button onclick="window.location.href='/logout'" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 12px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; margin-left:12px; transition:background 0.2s;">Logout</button>
+ </header>
 
-  <!-- Initial Camera Setup Wizard Hero Modal -->
-  <div id="initial-setup-wizard" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:32px; margin-bottom:25px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.35); transition:all 0.3s ease;">
-    <div style="font-size:42px; margin-bottom:12px;">🎥</div>
-    <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin:0 0 8px 0; color:var(--text);">Multi-Camera System Configuration</h2>
-    <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitor    <!-- Step 1: Uncapped Camera Count Selection Provisions -->
-    <div style="display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px;">
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(1)">
-        <span>📹 1 Camera</span>
-      </button>
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(2)">
-        <span>👥 2 Cameras (Pairs)</span>
-      </button>
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(3)">
-        <span>🖥️ 3 Cameras</span>
-      </button>
-      <button class="wizard-choice-btn" onclick="configureWizardSlots(4)">
-        <span>🎥 4 Cameras</span>
-      </button>
-      <div style="display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 14px; border-radius:12px;">
-        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Custom:</span>
-        <input type="number" id="custom-cam-input" min="1" max="50" value="5" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:5px 8px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:55px; outline:none;">
-        <button onclick="configureWizardSlots(parseInt(document.getElementById('custom-cam-input').value) || 5)" style="background:var(--orange); color:#fff; border:none; padding:6px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set</button>
-      </div>
-    </div>
+ <!-- Initial Camera Setup Wizard Hero Modal -->
+ <div id="initial-setup-wizard" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:32px; margin-bottom:25px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,0.35); transition:all 0.3s ease;">
+ <div style="font-size:42px; margin-bottom:12px;"></div>
+ <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin:0 0 8px 0; color:var(--text);">Multi-Camera System Configuration</h2>
+ <p style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); margin:0 0 24px 0;">How many camera feeds would you like to set up for live monitor <!-- Step 1: Uncapped Camera Count Selection Provisions -->
+ <div style="display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:24px;">
+ <button class="wizard-choice-btn" onclick="configureWizardSlots(1)">
+ <span> 1 Camera</span>
+ </button>
+ <button class="wizard-choice-btn" onclick="configureWizardSlots(2)">
+ <span> 2 Cameras (Pairs)</span>
+ </button>
+ <button class="wizard-choice-btn" onclick="configureWizardSlots(3)">
+ <span> 3 Cameras</span>
+ </button>
+ <button class="wizard-choice-btn" onclick="configureWizardSlots(4)">
+ <span> 4 Cameras</span>
+ </button>
+ <div style="display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 14px; border-radius:12px;">
+ <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Custom:</span>
+ <input type="number" id="custom-cam-input" min="1" max="50" value="5" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:5px 8px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:55px; outline:none;">
+ <button onclick="configureWizardSlots(parseInt(document.getElementById('custom-cam-input').value) || 5)" style="background:var(--orange); color:#fff; border:none; padding:6px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set</button>
+ </div>
+ </div>
 
-    <!-- Step 2: Camera Upload & Slot Assignment Panel -->
-    <div id="wizard-slot-container" style="display:none; text-align:left; max-width:650px; margin:0 auto; background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:20px;">
-      <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
-        <span>Assign Video Feeds for <span id="wizard-slot-count-badge">2</span> Camera(s)</span>
-        <button onclick="launchDemoSampleFeeds()" style="background:rgba(62,207,142,0.15); color:var(--green); border:1px solid rgba(62,207,142,0.3); padding:4px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer;">⚡ Launch Sample Feeds</button>
-      </div>
+ <!-- Step 2: Camera Upload & Slot Assignment Panel -->
+ <div id="wizard-slot-container" style="display:none; text-align:left; max-width:650px; margin:0 auto; background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:20px;">
+ <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+ <span>Assign Video Feeds for <span id="wizard-slot-count-badge">2</span> Camera(s)</span>
+ <button onclick="launchDemoSampleFeeds()" style="background:rgba(62,207,142,0.15); color:var(--green); border:1px solid rgba(62,207,142,0.3); padding:4px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer;"> Launch Sample Feeds</button>
+ </div>
 
-      <div id="wizard-slot-inputs" style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
-        <!-- Dynamic file inputs generated by configureWizardSlots(count) -->
-      </div>
+ <div id="wizard-slot-inputs" style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+ <!-- Dynamic file inputs generated by configureWizardSlots(count) -->
+ </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-border);">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <label for="wizard-capacity-input" style="font-size:12.5px; color:var(--text); font-family:'JetBrains Mono',monospace; font-weight:600;">Max Capacity:</label>
-          <input type="number" id="wizard-capacity-input" value="25" min="1" max="1000" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none; font-weight:600;">
-        </div>
-        <button onclick="submitWizardCameras()" id="wizard-launch-btn" style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#fff; background:var(--orange); border:none; padding:10px 24px; border-radius:8px; cursor:pointer;">🚀 Confirm & Launch Cameras</button>
-      </div>
-    </div>
-  </div>
+ <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-border);">
+ <div style="display:flex; align-items:center; gap:8px;">
+ <label for="wizard-capacity-input" style="font-size:12.5px; color:var(--text); font-family:'JetBrains Mono',monospace; font-weight:600;">Max Capacity:</label>
+ <input type="number" id="wizard-capacity-input" value="25" min="1" max="1000" style="background:var(--panel); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none; font-weight:600;">
+ </div>
+ <button onclick="submitWizardCameras()" id="wizard-launch-btn" style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#fff; background:var(--orange); border:none; padding:10px 24px; border-radius:8px; cursor:pointer;"> Confirm & Launch Cameras</button>
+ </div>
+ </div>
+ </div>
 
-  <div class="cam-select-bar" id="cam-select-bar">
-    <div class="cam-select" id="cam-select">
-      <button onclick="selectCam('1', this)">Cam 1</button>
-      <button onclick="selectCam('2', this)">Cam 2</button>
-      <button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>
-    </div>
+ <div class="cam-select-bar" id="cam-select-bar" style="display: none;">
+ <div class="cam-select" id="cam-select">
+ <button onclick="selectCam('1', this)">Cam 1</button>
+ <button onclick="selectCam('2', this)">Cam 2</button>
+ <button class="active" onclick="selectCam('both', this)">Both / Grid (Pairs)</button>
+ </div>
 
-    <!-- Quick Capacity setting widget for all cameras -->
-    <div style="display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:6px 14px;">
-      <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Set Capacity:</span>
-      <input type="number" id="quick-capacity-input" min="1" max="1000" value="25" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:5px 8px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:60px; outline:none; font-weight:600;">
-      <button onclick="applyQuickCapacity()" style="background:var(--orange); color:#fff; border:none; padding:5px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set All Cams</button>
-    </div>
+ <!-- Quick Capacity setting widget for all cameras -->
+ <div style="display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:6px 14px;">
+ <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Set Capacity:</span>
+ <input type="number" id="quick-capacity-input" min="1" max="1000" value="25" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:5px 8px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:60px; outline:none; font-weight:600;">
+ <button onclick="applyQuickCapacity()" style="background:var(--orange); color:#fff; border:none; padding:5px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer;">Set All Cams</button>
+ </div>
 
-    <!-- Provision to set how many cameras user wants per row -->
-    <div style="display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:6px 14px;">
-      <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Grid Provision:</span>
-      <select id="grid-cols-select" onchange="changeGridColumns(this.value)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:5px 10px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; outline:none; cursor:pointer;">
-        <option value="cols-2" selected>Pairs of 2 (2 Cols)</option>
-        <option value="cols-1">Full Width (1 Col)</option>
-        <option value="cols-3">3 Cameras / Row</option>
-        <option value="cols-4">4 Cameras / Row</option>
-      </select>
-    </div>
-  </div>
+ <!-- Provision to set how many cameras user wants per row -->
+ <div style="display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:6px 14px;">
+ <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);">Grid Provision:</span>
+ <select id="grid-cols-select" onchange="changeGridColumns(this.value)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:5px 10px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:12px; outline:none; cursor:pointer;">
+ <option value="cols-2" selected>Pairs of 2 (2 Cols)</option>
+ <option value="cols-1">Full Width (1 Col)</option>
+ <option value="cols-3">3 Cameras / Row</option>
+ <option value="cols-4">4 Cameras / Row</option>
+ </select>
+ </div>
+ </div>
 
-  <div class="cam-grid cols-2" id="cam-grid">
+ <div class="cam-grid cols-2" id="cam-grid" style="display: none;">
 
-    <div class="cam-card" data-cam="1">
-      <div class="cam-video-col">
-        <div class="cam-head">
-          <div class="header">
-            <h2>CAM 1 <span class="tag">doorway</span></h2>
-            <div style="display:flex; align-items:center; gap:12px;">
-              <button onclick="deleteCamera('cam_door_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
-              <div class="status-indicator" id="c1-status">
-                <div class="dot"></div>
-                <span>Live</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="video-panel">
-          <div class="caption-tag">doorway view</div>
-          <img id="vid-cam_door_1" src="/video_feed/cam_door_1" data-src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 1 feed">
-          <!-- Custom Playback Controls -->
-          <div class="playback-controls">
-            <button onclick="togglePlay('cam_door_1', this)" class="ctrl-btn" title="Pause">⏸</button>
-            <input type="range" class="seek-bar" id="seek-cam_door_1" min="0" max="100" value="0" oninput="seekVideo('cam_door_1', this.value)" title="Scrub Timeline">
-            <button onclick="restartCamera('cam_door_1')" class="ctrl-btn" title="Restart">↺</button>
-          </div>
-        </div>
-      </div>
-      <div class="stats-col">
-        <div class="stat-grid">
-          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c1-cap">25</div><div class="lbl">Total cap.</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c1-present">0</div><div class="lbl">Present</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c1-remaining">25</div><div class="lbl">Remaining</div></div>
-          
-          <div class="chip c1-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c1-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c1-sitting-rem">15</span> rem)</div></div>
-          <div class="chip wide c1-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c1-standing-rem">10</span> rem)</div><div class="num"><span id="c1-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-standing-max">10</span></span></div></div>
-        </div>
-      </div>
-    </div>
+ <div class="cam-card" data-cam="1">
+ <div class="cam-video-col">
+ <div class="cam-head">
+ <div class="header">
+ <h2>CAM 1 <span class="tag">doorway</span></h2>
+ <div style="display:flex; align-items:center; gap:12px;">
+ <button onclick="deleteCamera('cam_door_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed"></button>
+ <div class="status-indicator" id="c1-status">
+ <div class="dot"></div>
+ <span>Live</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="video-panel">
+ <div class="caption-tag">doorway view</div>
+ <img id="vid-cam_door_1" data-src="/video_feed/cam_door_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 1 feed">
+ <!-- Custom Playback Controls -->
+ <div class="playback-controls">
+ <button onclick="togglePlay('cam_door_1', this)" class="ctrl-btn" title="Pause"></button>
+ <input type="range" class="seek-bar" id="seek-cam_door_1" min="0" max="100" value="0" oninput="seekVideo('cam_door_1', this.value)" title="Scrub Timeline">
+ <button onclick="restartCamera('cam_door_1')" class="ctrl-btn" title="Restart">↺</button>
+ </div>
+ </div>
+ </div>
+ <div class="stats-col">
+ <div class="stat-grid">
+ <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c1-cap">25</div><div class="lbl">Total cap.</div></div>
+ <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c1-present">0</div><div class="lbl">Present</div></div>
+ <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c1-remaining">25</div><div class="lbl">Remaining</div></div>
+ 
+ <div class="chip c1-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c1-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c1-sitting-rem">15</span> rem)</div></div>
+ <div class="chip wide c1-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c1-standing-rem">10</span> rem)</div><div class="num"><span id="c1-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-standing-max">10</span></span></div></div>
+ </div>
+ </div>
+ </div>
 
-    <div class="cam-card" data-cam="2">
-      <div class="cam-video-col">
-        <div class="cam-head">
-          <div class="header">
-            <h2>CAM 2 <span class="tag">interior</span></h2>
-            <div style="display:flex; align-items:center; gap:12px;">
-              <button onclick="deleteCamera('cam_room_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed">🗑️</button>
-              <div class="status-indicator" id="c2-status">
-                <div class="dot"></div>
-                <span>Live</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="video-panel">
-          <div class="caption-tag">interior view</div>
-          <img id="vid-cam_room_1" src="/video_feed/cam_room_1" data-src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 2 feed">
-          <!-- Custom Playback Controls -->
-          <div class="playback-controls">
-            <button onclick="togglePlay('cam_room_1', this)" class="ctrl-btn" title="Pause">⏸</button>
-            <input type="range" class="seek-bar" id="seek-cam_room_1" min="0" max="100" value="0" oninput="seekVideo('cam_room_1', this.value)" title="Scrub Timeline">
-            <button onclick="restartCamera('cam_room_1')" class="ctrl-btn" title="Restart">↺</button>
-          </div>
-        </div>
-      </div>
-      <div class="stats-col">
-        <div class="stat-grid">
-          <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c2-cap">25</div><div class="lbl">Total cap.</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">0</div><div class="lbl">Present</div></div>
-          <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">25</div><div class="lbl">Remaining</div></div>
+ <div class="cam-card" data-cam="2">
+ <div class="cam-video-col">
+ <div class="cam-head">
+ <div class="header">
+ <h2>CAM 2 <span class="tag">interior</span></h2>
+ <div style="display:flex; align-items:center; gap:12px;">
+ <button onclick="deleteCamera('cam_room_1')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:16px;" title="Delete Feed"></button>
+ <div class="status-indicator" id="c2-status">
+ <div class="dot"></div>
+ <span>Live</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="video-panel">
+ <div class="caption-tag">interior view</div>
+ <img id="vid-cam_room_1" data-src="/video_feed/cam_room_1" onerror="this.style.display='none'" onload="this.style.display='block'" style="width:100%; height:100%; object-fit:cover;" alt="CAM 2 feed">
+ <!-- Custom Playback Controls -->
+ <div class="playback-controls">
+ <button onclick="togglePlay('cam_room_1', this)" class="ctrl-btn" title="Pause"></button>
+ <input type="range" class="seek-bar" id="seek-cam_room_1" min="0" max="100" value="0" oninput="seekVideo('cam_room_1', this.value)" title="Scrub Timeline">
+ <button onclick="restartCamera('cam_room_1')" class="ctrl-btn" title="Restart">↺</button>
+ </div>
+ </div>
+ </div>
+ <div class="stats-col">
+ <div class="stat-grid">
+ <div class="chip" style="--chip-bg:var(--chip-blue-bg); --chip-color:var(--blue);"><div class="num" id="c2-cap">25</div><div class="lbl">Total cap.</div></div>
+ <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">0</div><div class="lbl">Present</div></div>
+ <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">25</div><div class="lbl">Remaining</div></div>
 
-          <div class="chip c2-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c2-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c2-sitting-rem">15</span> rem)</div></div>
-          <div class="chip wide c2-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c2-standing-rem">10</span> rem)</div><div class="num"><span id="c2-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-standing-max">10</span></span></div></div>
-        </div>
-      </div>
-    </div>
+ <div class="chip c2-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c2-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c2-sitting-rem">15</span> rem)</div></div>
+ <div class="chip wide c2-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c2-standing-rem">10</span> rem)</div><div class="num"><span id="c2-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-standing-max">10</span></span></div></div>
+ </div>
+ </div>
+ </div>
 
-  </div>
+ </div>
 
-  <div class="summary-bar" id="summary-bar">
-    <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">0</b> present · <b id="s-c1-remaining">25</b> remain</div>
-    <div class="divider" id="sum-div" style="display:flex;"></div>
-    <div class="grp" id="sum-cam2" style="display:flex;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
-    <div class="spacer"></div>
-    <div class="pill" id="s-total-occupancy">total 0</div>
-    <div class="pill" id="s-total-entered" style="display:none;">entered 0</div>
-  </div>
+ <div class="summary-bar" id="summary-bar" style="display: none;">
+ <div class="grp" id="sum-cam1">CAM 1 <b id="s-c1-present">0</b> present · <b id="s-c1-remaining">25</b> remain</div>
+ <div class="divider" id="sum-div" style="display:flex;"></div>
+ <div class="grp" id="sum-cam2" style="display:flex;">CAM 2 <b id="s-c2-present">0</b> present · <b id="s-c2-remaining">25</b> remain</div>
+ <div class="spacer"></div>
+ <div class="pill" id="s-total-occupancy">total 0</div>
+ <div class="pill" id="s-total-entered" style="display:none;">entered 0</div>
+ </div>
 
-  <!-- Real-Time Peak Trends & Analytics Chart Panel (2 Graphs Side-by-Side) -->
-  <div class="analytics-panel" id="analytics-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
-      <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
-        <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">📈 Per-Camera Minute-by-Minute Occupancy Analytics</h3>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green); background:var(--chip-green-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
-          Peak: <b id="peak-headcount-val">0</b>
-        </span>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--cyan, #38BDF8); background:rgba(56, 189, 248, 0.12); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
-          Avg: <b id="avg-headcount-val">0</b>
-        </span>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--amber, #F59E0B); background:var(--chip-amber-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
-          Utilization: <b id="utilization-rate-val">0%</b>
-        </span>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--purple, #A855F7); background:var(--chip-purple-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
-          Peak Time: <b id="peak-time-val">--:--</b>
-        </span>
-      </div>
-      <a href="/export-csv" download style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text); background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 16px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer; transition:all 0.2s ease;">
-        <span>📥 Export CSV Audit Log</span>
-      </a>
-    </div>
-    
-    <!-- 2 Side-by-Side Graphs -->
-    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; margin-top:15px;">
-      <div style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:15px;">
-        <h4 style="margin:0 0 10px 0; font-family:'Space Grotesk',sans-serif; font-size:13.5px; color:var(--text);">📊 CAM 1 Occupancy Trend (Min-by-Min)</h4>
-        <div style="width:100%; height:180px;">
-          <canvas id="cam1TrendChart"></canvas>
-        </div>
-      </div>
-      <div style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:15px;">
-        <h4 style="margin:0 0 10px 0; font-family:'Space Grotesk',sans-serif; font-size:13.5px; color:var(--text);">📊 CAM 2 Occupancy Trend (Min-by-Min)</h4>
-        <div style="width:100%; height:180px;">
-          <canvas id="cam2TrendChart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
+ <!-- Real-Time Peak Trends & Analytics Chart Panel (2 Graphs Side-by-Side) -->
+ <div class="analytics-panel" id="analytics-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+ <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
+ <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+ <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px;"> Per-Camera Minute-by-Minute Occupancy Analytics</h3>
+ <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green); background:var(--chip-green-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+ Peak: <b id="peak-headcount-val">0</b>
+ </span>
+ <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--cyan, #38BDF8); background:rgba(56, 189, 248, 0.12); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+ Avg: <b id="avg-headcount-val">0</b>
+ </span>
+ <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--amber, #F59E0B); background:var(--chip-amber-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+ Utilization: <b id="utilization-rate-val">0%</b>
+ </span>
+ <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--purple, #A855F7); background:var(--chip-purple-bg); padding:4px 10px; border-radius:12px; border:1px solid var(--panel-border);">
+ Peak Time: <b id="peak-time-val">--:--</b>
+ </span>
+ </div>
+ <a href="/export-csv" download style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text); background:var(--panel-2); border:1px solid var(--panel-border); padding:8px 16px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; cursor:pointer; transition:all 0.2s ease;">
+ <span> Export CSV Audit Log</span>
+ </a>
+ </div>
+ 
+ <!-- 2 Side-by-Side Graphs -->
+ <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; margin-top:15px;">
+ <div style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:15px;">
+ <h4 style="margin:0 0 10px 0; font-family:'Space Grotesk',sans-serif; font-size:13.5px; color:var(--text);"> CAM 1 Occupancy Trend (Min-by-Min)</h4>
+ <div style="width:100%; height:180px;">
+ <canvas id="cam1TrendChart"></canvas>
+ </div>
+ </div>
+ <div style="background:var(--panel-2); border:1px solid var(--panel-border); border-radius:12px; padding:15px;">
+ <h4 style="margin:0 0 10px 0; font-family:'Space Grotesk',sans-serif; font-size:13.5px; color:var(--text);"> CAM 2 Occupancy Trend (Min-by-Min)</h4>
+ <div style="width:100%; height:180px;">
+ <canvas id="cam2TrendChart"></canvas>
+ </div>
+ </div>
+ </div>
+ </div>
 
-  <!-- Interactive Seating Plan & Seat Occupancy Map -->
-  <div class="seating-plan-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-      <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; display:flex; align-items:center; gap:8px;">
-        <span>Real-Time Seat Layout & Occupancy Blocks</span>
-      </h3>
-      <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--purple); background:var(--chip-purple-bg); padding:4px 12px; border-radius:12px; border:1px solid var(--panel-border);" id="seat-plan-summary">
-        0 / 15 Seats Occupied (0%)
-      </span>
-    </div>
-    
-    <!-- Seat Visual Progress Bar -->
-    <div style="width:100%; height:8px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin-bottom:16px; border:1px solid var(--panel-border);">
-      <div id="seat-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #A855F7, #3B82F6); transition:width 0.4s ease;"></div>
-    </div>
-    
-    <!-- Visual Seat Map Grid -->
-    <div id="seat-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:10px;"></div>
-  </div>
+ <!-- Interactive Seating Plan & Seat Occupancy Map -->
+ <div class="seating-plan-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
+ <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+ <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; display:flex; align-items:center; gap:8px;">
+ <span>Real-Time Seat Layout & Occupancy Blocks</span>
+ </h3>
+ <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--purple); background:var(--chip-purple-bg); padding:4px 12px; border-radius:12px; border:1px solid var(--panel-border);" id="seat-plan-summary">
+ 0 / 15 Seats Occupied (0%)
+ </span>
+ </div>
+ 
+ <!-- Seat Visual Progress Bar -->
+ <div style="width:100%; height:8px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin-bottom:16px; border:1px solid var(--panel-border);">
+ <div id="seat-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #A855F7, #3B82F6); transition:width 0.4s ease;"></div>
+ </div>
+ 
+ <!-- Visual Seat Map Grid -->
+ <div id="seat-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:10px;"></div>
+ </div>
 
-  <!-- Upload Panel for dynamic camera addition -->
-  <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
-    <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
-    <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
-    <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
-    <div style="margin-bottom:15px; display:flex; flex-wrap:wrap; align-items:center; gap:15px;">
-        <div style="display:none; align-items:center; gap:8px;">
-            <label for="sitting-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Seating Cap: </label>
-            <input type="number" id="sitting-cap-input" value="15" oninput="syncTotalCap()" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
-        </div>
-        <div style="display:none; align-items:center; gap:8px;">
-            <label for="standing-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Standing Cap: </label>
-            <input type="number" id="standing-cap-input" value="10" oninput="syncTotalCap()" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <label for="total-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Total Cap: </label>
-            <input type="number" id="total-cap-input" value="25" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
-        </div>
-    </div>
-    <button onclick="uploadCameras()" style="font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:#fff; background:var(--orange); border:none; padding:8px 18px; border-radius:8px; cursor:pointer;">Upload & Add</button>
-  </div>
+ <!-- Upload Panel for dynamic camera addition -->
+ <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
+ <h3 style="margin-top:0; font-family:'Space Grotesk',sans-serif; font-size:16px;">Add Camera Feeds</h3>
+ <input type="file" id="video-files" accept="video/*" multiple style="margin-bottom:15px; color:var(--text);">
+ <div id="role-assign" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
+ <div style="margin-bottom:15px; display:flex; flex-wrap:wrap; align-items:center; gap:15px;">
+ <div style="display:none; align-items:center; gap:8px;">
+ <label for="sitting-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Seating Cap: </label>
+ <input type="number" id="sitting-cap-input" value="15" oninput="syncTotalCap()" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
+ </div>
+ <div style="display:none; align-items:center; gap:8px;">
+ <label for="standing-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Standing Cap: </label>
+ <input type="number" id="standing-cap-input" value="10" oninput="syncTotalCap()" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
+ </div>
+ <div style="display:flex; align-items:center; gap:8px;">
+ <label for="total-cap-input" style="font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Total Cap: </label>
+ <input type="number" id="total-cap-input" value="25" style="background:var(--panel-2); color:var(--text); border:1px solid var(--panel-border); padding:6px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; width:70px; outline:none;">
+ </div>
+ </div>
+ <button onclick="uploadCameras()" style="font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:#fff; background:var(--orange); border:none; padding:8px 18px; border-radius:8px; cursor:pointer;">Upload & Add</button>
+ </div>
 
 </div>
 <script>
-  function changeGridColumns(colClass) {
-    const grid = document.getElementById('cam-grid');
-    if (grid) {
-      grid.className = `cam-grid ${colClass}`;
-    }
-  }
+ function changeGridColumns(colClass) {
+ const grid = document.getElementById('cam-grid');
+ if (grid) {
+ grid.className = `cam-grid ${colClass}`;
+ }
+ }
 
-  async function applyQuickCapacity() {
-    const val = parseInt(document.getElementById('quick-capacity-input').value);
-    if (!val || val < 1) {
-      alert("Please enter a valid capacity number.");
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('capacity', val);
-      const res = await fetch('/capacity', { method: 'POST', body: formData });
-      if (res.ok) {
-        alert(`✅ Capacity set to ${val} for all cameras!`);
-        if (typeof fetchStatus === 'function') fetchStatus();
-      } else {
-        alert("Failed to update capacity.");
-      }
-    } catch(e) {
-      alert("Error updating capacity: " + e);
-    }
-  }
+ async function applyQuickCapacity() {
+ const val = parseInt(document.getElementById('quick-capacity-input').value);
+ if (!val || val < 1) {
+ alert("Please enter a valid capacity number.");
+ return;
+ }
+ try {
+ const formData = new FormData();
+ formData.append('capacity', val);
+ const res = await fetch('/capacity', { method: 'POST', body: formData });
+ if (res.ok) {
+ alert(` Capacity set to ${val} for all cameras!`);
+ if (typeof fetchStatus === 'function') fetchStatus();
+ } else {
+ alert("Failed to update capacity.");
+ }
+ } catch(e) {
+ alert("Error updating capacity: " + e);
+ }
+ }
 
-  function selectCam(which, btn){
-    if (btn && btn.classList) {
-      document.querySelectorAll('.cam-select button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
+ function selectCam(which, btn){
+ if (btn && btn.classList) {
+ document.querySelectorAll('.cam-select button').forEach(b => b.classList.remove('active'));
+ btn.classList.add('active');
+ }
 
-    const allCards = document.querySelectorAll('.cam-card');
-    const grid = document.getElementById('cam-grid');
+ const allCards = document.querySelectorAll('.cam-card');
+ const grid = document.getElementById('cam-grid');
 
-    if (which === 'both') {
-      allCards.forEach(card => card.style.display = '');
-      const colSelect = document.getElementById('grid-cols-select');
-      const selectedCol = colSelect ? colSelect.value : 'cols-2';
-      if (grid) grid.className = `cam-grid ${selectedCol}`;
-    } else {
-      allCards.forEach(card => {
-        if (card.getAttribute('data-cam') === String(which)) {
-          card.style.display = '';
-        } else {
-          card.style.display = 'none';
-        }
-      });
-      if (grid) grid.className = 'cam-grid cols-1';
-    }
-    if (window.lastZoneData && typeof renderZone === 'function') renderZone(window.lastZoneData);
-  }
-  
-  // Set video stream sources after page load to prevent infinite loading spinner
+ if (which === 'both') {
+ allCards.forEach(card => card.style.display = '');
+ const colSelect = document.getElementById('grid-cols-select');
+ const selectedCol = colSelect ? colSelect.value : 'cols-2';
+ if (grid) grid.className = `cam-grid ${selectedCol}`;
+ } else {
+ allCards.forEach(card => {
+ if (card.getAttribute('data-cam') === String(which)) {
+ card.style.display = '';
+ } else {
+ card.style.display = 'none';
+ }
+ });
+ if (grid) grid.className = 'cam-grid cols-1';
+ }
+ if (window.lastZoneData && typeof renderZone === 'function') renderZone(window.lastZoneData);
+ }
+ 
+  // Always show only the wizard on first load — hide all dashboard panels and reset server state
   window.addEventListener('load', () => {
-      document.getElementById('vid-cam_door_1').src = document.getElementById('vid-cam_door_1').dataset.src;
-      document.getElementById('vid-cam_room_1').src = document.getElementById('vid-cam_room_1').dataset.src;
+    fetch('/reset-data', { method: 'POST' }).catch(e => console.error(e));
+    openCameraSetupWizard();
   });
 </script>
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=1.4"></script>
 </body>
 </html>

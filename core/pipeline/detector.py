@@ -36,52 +36,94 @@ class DetResults:
     def __getitem__(self, idx):
         return DetResults(self.xyxy[idx], self.conf[idx], self.cls[idx])
 
+_MODEL_CACHE = {}
+
+def _apply_nms(detections: List[Dict], iou_threshold: float = 0.10, center_dist_px: float = 60.0) -> List[Dict]:
+    """
+    Two-stage deduplication for RT-DETR:
+    Stage 1 — IoU NMS: removes boxes overlapping by > iou_threshold (catches same-size duplicates)
+    Stage 2 — Center NMS: removes boxes whose centers are within center_dist_px pixels (catches different-size duplicates on same head)
+    Keeps the highest-confidence box in each group.
+    """
+    if len(detections) <= 1:
+        return detections
+    # Sort by confidence descending
+    dets = sorted(detections, key=lambda d: d.get("conf", 0), reverse=True)
+    kept = []
+    for det in dets:
+        b1 = det["bbox"]
+        cx1 = (b1[0] + b1[2]) / 2.0
+        cy1 = (b1[1] + b1[3]) / 2.0
+        drop = False
+        for k in kept:
+            b2 = k["bbox"]
+            # Stage 1: IoU check
+            ix1 = max(b1[0], b2[0]); iy1 = max(b1[1], b2[1])
+            ix2 = min(b1[2], b2[2]); iy2 = min(b1[3], b2[3])
+            iw = max(0, ix2 - ix1); ih = max(0, iy2 - iy1)
+            inter = iw * ih
+            a1 = (b1[2]-b1[0]) * (b1[3]-b1[1])
+            a2 = (b2[2]-b2[0]) * (b2[3]-b2[1])
+            union = a1 + a2 - inter
+            iou = inter / union if union > 0 else 0
+            if iou > iou_threshold:
+                drop = True
+                break
+            # Stage 2: Center-distance check
+            cx2 = (b2[0] + b2[2]) / 2.0
+            cy2 = (b2[1] + b2[3]) / 2.0
+            dist = ((cx1 - cx2) ** 2 + (cy1 - cy2) ** 2) ** 0.5
+            if dist < center_dist_px:
+                drop = True
+                break
+        if not drop:
+            kept.append(det)
+    return kept
+
 class Detector:
-    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.50):
+    def __init__(self, model_path: str = "rtdetr-l.pt", fallback_model_path: str = "yolo11m.pt", conf_thresh: float = 0.50, selected_model: str = "rtdetr"):
         self.conf_thresh = conf_thresh
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.head_model = None
-        self.body_model = None
         self.is_fallback = False
+        self.selected_model = selected_model
 
-        # 1. Primary Model: YOLOH Model (yoloh.pt from yoloh_model.zip) for primary headcount & head tracking
-        if os.path.exists("yoloh.pt"):
-            logger.info("Loading Primary Model: yoloh.pt (RT-DETR YOLOH)")
-            self.body_model = RTDETR("yoloh.pt")
-        elif os.path.exists("rtdetr-custom.pt"):
-            logger.info("Loading Primary Headcount Model: rtdetr-custom.pt (RT-DETR)")
-            self.body_model = RTDETR("rtdetr-custom.pt")
+        # 1. Select Primary Model based on user choice
+        # ONLY load the model the user selected — nothing else
+        if selected_model == "yolo" and os.path.exists("fine_tuned_yolo.pt"):
+            if "fine_tuned_yolo" in _MODEL_CACHE:
+                self.body_model = _MODEL_CACHE["fine_tuned_yolo"]
+            else:
+                logger.info("Loading User Fine-Tuned Model: fine_tuned_yolo.pt (YOLOv8)")
+                self.body_model = YOLO("fine_tuned_yolo.pt")
+                _MODEL_CACHE["fine_tuned_yolo"] = self.body_model
+            logger.info("Fine-Tuned YOLOv8 selected — skipping all other models.")
         else:
-            head_model_path = "yolov8m-head.pt"
-            if not os.path.exists(head_model_path):
-                logger.info("Downloading YOLOv8m head detection model...")
-                import urllib.request
-                urllib.request.urlretrieve("https://huggingface.co/keremberke/yolov8m-nlf-head-detection/resolve/main/best.pt", head_model_path)
-            self.body_model = YOLO(head_model_path)
-            self.is_fallback = True
+            # RT-DETR head detection only
+            if "body_model" in _MODEL_CACHE:
+                self.body_model = _MODEL_CACHE["body_model"]
+            else:
+                if os.path.exists("yoloh.pt"):
+                    logger.info("Loading Primary Model: yoloh.pt (RT-DETR YOLOH)")
+                    self.body_model = RTDETR("yoloh.pt")
+                elif os.path.exists("rtdetr-custom.pt"):
+                    logger.info("Loading Primary Headcount Model: rtdetr-custom.pt (RT-DETR)")
+                    self.body_model = RTDETR("rtdetr-custom.pt")
+                else:
+                    head_model_path = "yolov8m-head.pt"
+                    if not os.path.exists(head_model_path):
+                        logger.info("Downloading YOLOv8m head detection model...")
+                        import urllib.request
+                        urllib.request.urlretrieve("https://huggingface.co/keremberke/yolov8m-nlf-head-detection/resolve/main/best.pt", head_model_path)
+                    self.body_model = YOLO(head_model_path)
+                    self.is_fallback = True
+                _MODEL_CACHE["body_model"] = self.body_model
+            logger.info("RT-DETR selected — skipping sitting specialist and fallback models.")
 
-        # 1b. Sitting Specialist Model: best (1).pt (rtdetr_sitting_best.pt)
+        # Both paths: no secondary models loaded
         self.sitting_model = None
-        if os.path.exists("rtdetr_sitting_best.pt"):
-            logger.info("Loading Sitting Specialist RT-DETR Model: rtdetr_sitting_best.pt (best (1).pt)")
-            self.sitting_model = RTDETR("rtdetr_sitting_best.pt")
+        self.head_model = None
 
-        # 2. Fine-Tuned Head Detector Model: headmodel.pt (User-Provided Fine-Tuned Head Model)
-        if os.path.exists("headmodel.pt"):
-            logger.info("Loading User Fine-Tuned Head Detector Model: headmodel.pt (YOLO)")
-            self.head_model = YOLO("headmodel.pt")
-            self.use_yolox = False
-        elif os.path.exists("crowdhuman_yolov8n_best.pt"):
-            logger.info("Loading Fine-Tuned Head Detector Model: crowdhuman_yolov8n_best.pt (YOLO)")
-            self.head_model = YOLO("crowdhuman_yolov8n_best.pt")
-            self.use_yolox = False
-        elif os.path.exists("head_yolov8n.pt"):
-            logger.info("Loading Fine-Tuned Head Detector Model: head_yolov8n.pt (YOLO)")
-            self.head_model = YOLO("head_yolov8n.pt")
-            self.use_yolox = False
-        else:
-            self.use_yolox = False
-
+        self.use_yolox = False
         self.model = self.body_model if self.body_model else getattr(self, "head_model", None)
 
     def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
@@ -135,52 +177,44 @@ class Detector:
                             "class_id": 0,
                             "track_id": i + 1
                         })
-        # 1. Primary Head Detection Model: RT-DETR Head Model (retr detr head / rtdetr-custom.pt)
+        # 1. Primary Head Detection Model
         primary_dets = []
-        # 1. Primary Head Detection Model: YOLOH Model (yoloh.pt / rtdetr-custom.pt)
-        primary_dets = []
+        # Model-specific thresholds:
+        # RT-DETR (general model) needs higher conf to avoid furniture/sofa false positives
+        # Fine-tuned YOLO is purpose-trained so can run at lower conf safely
+        if self.selected_model == "yolo":
+            infer_conf = 0.25  # Force 0.25 (overrides generic 0.45)
+            infer_iou  = 0.40
+            # CLAHE: boost local contrast so dark-toned heads under CCTV lighting become visible
+            import cv2 as _cv2
+            _clahe = _cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            lab = _cv2.cvtColor(frame, _cv2.COLOR_BGR2LAB)
+            l, a, b_ch = _cv2.split(lab)
+            l = _clahe.apply(l)
+            infer_frame = _cv2.cvtColor(_cv2.merge([l, a, b_ch]), _cv2.COLOR_LAB2BGR)
+        else:  # rtdetr
+            infer_conf = 0.66  # Force 0.66 (overrides generic 0.45)
+            infer_iou  = 0.30  # Very aggressive NMS — eliminates double boxes
+            infer_frame = frame
+
+
         if self.body_model:
             try:
                 with torch.inference_mode():
                     if track:
-                        results = self.body_model.track(frame, conf=0.66, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
+                        results = self.body_model.track(infer_frame, conf=infer_conf, iou=infer_iou, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
                     else:
-                        results = self.body_model(frame, conf=0.66, imgsz=640, verbose=False)
+                        results = self.body_model(infer_frame, conf=infer_conf, iou=infer_iou, imgsz=640, verbose=False)
                 primary_dets = self._parse_results(results)
+                # RT-DETR uses transformer matching — apply explicit Python NMS to remove duplicates
+                if self.selected_model != "yolo":
+                    primary_dets = _apply_nms(primary_dets, iou_threshold=0.35)
             except Exception as e:
                 logger.warning(f"Primary head detection error, falling back to YOLO: {e}")
-
-        # 2. Fallback Head Detection Model: Fine-Tuned YOLO Head Model (headmodel.pt)
-        if not primary_dets and self.head_model:
-            with torch.inference_mode():
-                if track:
-                    head_results = self.head_model.track(frame, conf=0.66, imgsz=640, persist=True, verbose=False, tracker="config/bytetrack_custom.yaml")
-                else:
-                    head_results = self.head_model(frame, conf=0.66, imgsz=640, verbose=False)
-            primary_dets = self._parse_results(head_results)
 
         if primary_dets:
             for d in primary_dets:
                 d["head_bbox"] = d["bbox"]
-
-            # 3. Sitting Specialist RT-DETR Model (best (1).pt): Use exclusively for Sitting posture detection
-            if getattr(self, "sitting_model", None) is not None:
-                try:
-                    with torch.inference_mode():
-                        sit_res = self.sitting_model(frame, conf=0.66, verbose=False)
-                    sit_dets = self._parse_results(sit_res)
-                    sit_boxes = [s["bbox"] for s in sit_dets if s.get("class_id") == 0]
-
-                    for d in primary_dets:
-                        hb = d["bbox"]
-                        cx, cy = (hb[0] + hb[2]) / 2.0, (hb[1] + hb[3]) / 2.0
-                        # Mark class_id = 0 (Sitting) if inside a sitting box from best(1).pt
-                        if any(b[0] <= cx <= b[2] and b[1] <= cy <= b[3] for b in sit_boxes):
-                            d["class_id"] = 0 # Sitting
-                        else:
-                            d["class_id"] = 1 # Standing
-                except Exception as e:
-                    logger.debug(f"Sitting specialist RT-DETR error: {e}")
 
             return primary_dets
 
@@ -207,10 +241,10 @@ class Detector:
                     continue
                 aspect_ratio = w / h
                 
-                # User-Specified Head Aspect Ratio (0.5 to 1.5) & Size Limits (12px to 180px)
-                if not (0.5 <= aspect_ratio <= 1.5):
+                # Head Aspect Ratio (0.35 to 1.9) & Size Limits (8px to 400px)
+                if not (0.35 <= aspect_ratio <= 1.9):
                     continue
-                if not (12 <= w <= 180 and 12 <= h <= 180):
+                if not (8 <= w <= 400 and 8 <= h <= 400):
                     continue
 
                 track_id = None

@@ -45,7 +45,7 @@ class ConfigLoader:
         self.raw_data = data
         return data
 
-    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file", capacity: int = None):
+    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file", capacity: int = None, selected_model: str = "rtdetr"):
         if not self.raw_data:
             # Load raw data directly without triggering full validation
             with open(self.config_path, "r") as f:
@@ -62,6 +62,7 @@ class ConfigLoader:
             existing["source"] = source
             existing["role"] = role
             existing["adapter"] = adapter
+            existing["selected_model"] = selected_model
             if capacity is not None:
                 existing["capacity"] = capacity
             self._save()
@@ -73,6 +74,7 @@ class ConfigLoader:
             "source": source,
             "role": role,
             "frame_skip": 1,
+            "selected_model": selected_model,
         }
         if capacity is not None:
             new_cam["capacity"] = capacity

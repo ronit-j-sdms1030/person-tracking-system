@@ -37,8 +37,13 @@ class ZoneState:
                 self.camera_stats[cam_id]["sitting"] = 0
                 self.camera_stats[cam_id]["standing"] = 0
         
-        self.track_timeout_seconds = 15.0 # Timeout for stale tracks (15s to prevent pause flickering)
+        self.track_timeout_seconds = 60.0 # Timeout for stale tracks (60s to prevent pause flickering)
         self.last_event_time = 0.0
+        # Smoothing: only update occupancy when count is stable
+        self._raw_occupancy = 0
+        self._stable_occupancy = 0
+        self._stable_count_streak = 0
+        self.STABLE_STREAK_NEEDED = 1  # Instant occupancy updates
 
     def update_camera_capacity(self, camera_id: str, capacity: int):
         if camera_id in self.camera_stats:
@@ -59,7 +64,9 @@ class ZoneState:
         self.entered_today = 0
         self.exited_today = 0
         self.active_tracks = {}
-        self.smoothed_occupancy = 0
+        self._raw_occupancy = 0
+        self._stable_occupancy = 0
+        self._stable_count_streak = 0
         for cam_id, stats in self.camera_stats.items():
             if "entered_today" in stats:
                 stats["entered_today"] = 0
@@ -70,7 +77,7 @@ class ZoneState:
 
     def _cleanup_stale_tracks(self, current_time: float):
         # Do not expire tracks if system is paused (no recent events within last 3 seconds)
-        if self.last_event_time > 0 and (current_time - self.last_event_time) > 3.0:
+        if self.last_event_time > 0 and (current_time - self.last_event_time) > 10.0:
             return
             
         stale_ids = [
@@ -125,8 +132,21 @@ class ZoneState:
 
     @property
     def current_occupancy(self) -> int:
+        raw = len(self.active_tracks)
+        # Stabilise: only move the displayed count when we see the same raw value
+        # for STABLE_STREAK_NEEDED consecutive reads (prevents per-frame bouncing)
+        if raw == self._raw_occupancy:
+            self._stable_count_streak += 1
+        else:
+            self._stable_count_streak = 0
+        self._raw_occupancy = raw
+
+        if self._stable_count_streak >= self.STABLE_STREAK_NEEDED or raw > self._stable_occupancy:
+            # Accept increases immediately; only accept decreases when stable
+            self._stable_occupancy = raw
+
         if self.active_tracks:
-            return len(self.active_tracks)
+            return self._stable_occupancy
         elif self.has_entry_exit_cams:
             return max(0, self.entered_today - self.exited_today)
         else:

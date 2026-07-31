@@ -102,12 +102,58 @@ def export_csv_report():
         headers={"Content-Disposition": "attachment; filename=headcount_audit_report.csv"}
     )
 
+@router.post("/add-rtsp-camera")
+async def add_rtsp_camera(request: Request):
+    body = await request.json()
+    camera_id = body.get("camera_id", "cam_rtsp_1")
+    source = body.get("source", "")
+    role = body.get("role", "both")
+    capacity = body.get("capacity", 25)
+    selected_model = body.get("selected_model", "rtdetr")
+
+    if not source:
+        raise HTTPException(status_code=400, detail="No source URL provided")
+
+    # Save to config
+    cam = config_loader.add_camera(camera_id=camera_id, source=source, role=role, adapter="rtsp", capacity=capacity, selected_model=selected_model)
+
+    # Hot-start camera thread
+    from api.main import vision_runner
+    if vision_runner is not None:
+        vision_runner.stop_camera(camera_id)
+        import time as _time; _time.sleep(0.3)
+        vision_runner.stopped_cameras.discard(camera_id)
+        cam_config = {
+            "camera_id": camera_id,
+            "adapter": "rtsp",
+            "source": source,
+            "role": role,
+            "cooldown_seconds": 1.5,
+            "frame_skip": 1,
+            "capacity": capacity,
+            "selected_model": selected_model,
+        }
+        t = threading.Thread(
+            target=vision_runner._run_camera,
+            args=(cam_config,),
+            name=f"cam-{camera_id}",
+            daemon=True,
+        )
+        vision_runner.threads.append(t)
+        t.start()
+
+        # Register camera in state manager
+        state_manager.camera_to_zone[camera_id] = "main_floor"
+
+    return {"status": "ok", "camera_id": camera_id, "cameras_added": [camera_id]}
+
 @router.post("/upload-cameras")
 async def upload_cameras(
     files: List[UploadFile],
     roles: List[str] = Form(...),
     slots: Optional[List[str]] = Form(None),
     cam_capacities: Optional[List[int]] = Form(None),
+    selected_models: Optional[List[str]] = Form(None),
     capacity: Optional[int] = Form(None),
     capacity_sitting: Optional[int] = Form(None),
     capacity_standing: Optional[int] = Form(None),
@@ -141,11 +187,12 @@ async def upload_cameras(
                 while chunk := await file.read(1024 * 1024):
                     f.write(chunk)
 
-            # Get per-camera capacity if provided
+            # Get per-camera capacity and model if provided
             cam_cap = cam_capacities[i] if (cam_capacities and i < len(cam_capacities)) else capacity
+            cam_model = selected_models[i] if (selected_models and i < len(selected_models)) else "rtdetr"
 
             # Add camera to config (saves to site_config.yaml)
-            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role, capacity=cam_cap)
+            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role, capacity=cam_cap, selected_model=cam_model)
             added.append(cam_id)
             
             # Hot-start a new camera thread in the running pipeline
@@ -161,6 +208,7 @@ async def upload_cameras(
                     "role": role,
                     "cooldown_seconds": 2.0,
                     "frame_skip": 3,
+                    "selected_model": cam_model,
                 }
                 t = threading.Thread(
                     target=vision_runner._run_camera,
@@ -243,5 +291,5 @@ async def video_feed(camera_id: str, request: Request):
                 if frame:
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.067)  # ~15fps
     return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
