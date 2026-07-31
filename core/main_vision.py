@@ -85,9 +85,10 @@ class VisionRunner:
         
         model_path = cam_config.get("model_path", "rtdetr-l.pt")
         fallback_model = cam_config.get("fallback_model_path", "yolo11m.pt")
-        conf_thresh = cam_config.get("conf_thresh", 0.20)
-        detector = Detector(model_path=model_path, fallback_model_path=fallback_model, conf_thresh=conf_thresh)
-        tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 1))
+        conf_thresh = cam_config.get("conf_thresh", 0.45)
+        selected_model = cam_config.get("selected_model", "rtdetr")
+        detector = Detector(model_path=model_path, fallback_model_path=fallback_model, conf_thresh=conf_thresh, selected_model=selected_model)
+        tracker = Tracker(detector, frame_skip=cam_config.get("frame_skip", 2))
 
         entry_exit_logic = EntryExitLogic(cam_config) if role in ("entry_exit", "both") else None
         posture_logic = PostureLogic() if role in ("posture", "both") else None
@@ -123,6 +124,14 @@ class VisionRunner:
 
             if frame is None:
                 consecutive_none += 1
+                adapter_type = cam_config.get("adapter", "file")
+                if adapter_type == "rtsp":
+                    # For live RTSP: just wait for the threaded reader to produce a frame
+                    time.sleep(0.05)
+                    if consecutive_none > 200:  # ~10 seconds of no frames — log once
+                        logger.warning(f"[{camera_id}] RTSP: no frames received for 10s. Check network/camera.")
+                        consecutive_none = 0
+                    continue
                 if consecutive_none >= MAX_NONE:
                     logger.info(f"[{camera_id}] Stream ended. Looping to beginning.")
                     cam_source.set_position(0.0)
@@ -142,6 +151,7 @@ class VisionRunner:
                 detections = tracker.process_frame(frame)
                 last_detections = detections
             else:
+                # Reuse last detections on skipped frames
                 detections = last_detections
 
             if role in ["entry_exit", "both"]:
@@ -211,47 +221,46 @@ class VisionRunner:
                 }
                 self.queue.put(event_dict)
 
-            # Draw clean bounding box rectangles with distinct colors for Sitting vs Standing
-            annotated = frame.copy()
-            for d in detections:
-                bbox = d.get("head_bbox", d.get("bbox"))
-                track_id = d.get("track_id", "")
-                if bbox and len(bbox) == 4:
-                    bx1, by1, bx2, by2 = bbox
-                    bw = bx2 - bx1
-                    bh = by2 - by1
-                    
-                    # Crop top 28% of box if full body box to isolate head region only
-                    if bh / max(1, bw) > 1.2:
-                        hy2 = by1 + bh * 0.28
-                        hx1 = bx1 + bw * 0.15
-                        hx2 = bx2 - bw * 0.15
-                        x1, y1, x2, y2 = max(0, int(hx1)), max(0, int(by1)), int(hx2), int(hy2)
-                    else:
-                        x1, y1, x2, y2 = max(0, int(bx1)), max(0, int(by1)), int(bx2), int(by2)
+            ran_detection = (frame_counter % 2 == 0 or not last_detections)
 
-                    color = (142, 207, 62)  # Crisp Green
-                    label = f"#{track_id}"
-                    
-                    # Draw BOLDER 3px rectangular bounding box ONLY around head
-                    cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 3)
-                    
-                    # Draw text label background pill for crisp contrast
-                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
-                    cv2.rectangle(annotated, (x1, max(0, y1 - 18)), (x1 + tw + 6, y1), color, -1)
-                    cv2.putText(annotated, label, (x1 + 3, max(13, y1 - 4)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
-                    
-            # Resize to 640x360 for ultra-fast, smooth, zero-lag streaming
-            annotated_resized = cv2.resize(annotated, (640, 360))
-            _, buffer = cv2.imencode('.jpg', annotated_resized, [cv2.IMWRITE_JPEG_QUALITY, 45])
-            self.latest_frames[camera_id] = buffer.tobytes()
+            # Only annotate + encode when detection ran — skip expensive encode on passthrough frames
+            if ran_detection:
+                # Draw clean bounding box rectangles
+                annotated = frame.copy()
+                for d in detections:
+                    bbox = d.get("head_bbox", d.get("bbox"))
+                    track_id = d.get("track_id", "")
+                    if bbox and len(bbox) == 4:
+                        bx1, by1, bx2, by2 = bbox
+                        bw = bx2 - bx1
+                        bh = by2 - by1
+                        # Crop top 28% of box if full body box to isolate head region only
+                        if bh / max(1, bw) > 1.2:
+                            hy2 = by1 + bh * 0.28
+                            hx1 = bx1 + bw * 0.15
+                            hx2 = bx2 - bw * 0.15
+                            x1, y1, x2, y2 = max(0, int(hx1)), max(0, int(by1)), int(hx2), int(hy2)
+                        else:
+                            x1, y1, x2, y2 = max(0, int(bx1)), max(0, int(by1)), int(bx2), int(by2)
+                        color = (142, 207, 62)
+                        label = f"#{track_id}"
+                        cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 3)
+                        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+                        cv2.rectangle(annotated, (x1, max(0, y1 - 18)), (x1 + tw + 6, y1), color, -1)
+                        cv2.putText(annotated, label, (x1 + 3, max(13, y1 - 4)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+                # Resize to 640x360 for fast streaming
+                annotated_resized = cv2.resize(annotated, (640, 360))
+                _, buffer = cv2.imencode('.jpg', annotated_resized, [cv2.IMWRITE_JPEG_QUALITY, 55])
+                self.latest_frames[camera_id] = buffer.tobytes()
 
-            # Throttle to native FPS to simulate a real-time live camera
-            elapsed = time.time() - loop_start
-            sleep_time = frame_delay - elapsed
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+            # Throttle file playback to native FPS, but run RTSP live streams at full speed without artificial delay
+            adapter_name = cam_config.get("adapter", "file")
+            if adapter_name != "rtsp":
+                elapsed = time.time() - loop_start
+                sleep_time = frame_delay - elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
 
         cam_source.release()
         logger.info(f"[{camera_id}] Camera thread exited cleanly.")

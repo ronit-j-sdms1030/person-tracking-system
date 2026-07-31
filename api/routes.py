@@ -21,6 +21,19 @@ def get_zone_status(zone_id: str):
         raise HTTPException(status_code=404, detail="Zone not found")
     return status
 
+@router.post("/capacity")
+def set_capacity(
+    capacity: Optional[int] = Form(None),
+    capacity_sitting: Optional[int] = Form(None),
+    capacity_standing: Optional[int] = Form(None),
+):
+    config_loader.update_capacity(
+        capacity=capacity,
+        capacity_sitting=capacity_sitting,
+        capacity_standing=capacity_standing
+    )
+    return {"status": "ok", "message": "Capacity updated successfully"}
+
 @router.post("/reset")
 def reset_data():
     from api.main import vision_runner
@@ -89,18 +102,50 @@ def export_csv_report():
         headers={"Content-Disposition": "attachment; filename=headcount_audit_report.csv"}
     )
 
-@router.post("/capacity")
-def set_capacity(
-    capacity: Optional[int] = Form(None),
-    capacity_sitting: Optional[int] = Form(None),
-    capacity_standing: Optional[int] = Form(None),
-):
-    config_loader.update_capacity(
-        capacity=capacity,
-        capacity_sitting=capacity_sitting,
-        capacity_standing=capacity_standing
-    )
-    return {"status": "ok", "message": "Capacity updated successfully"}
+@router.post("/add-rtsp-camera")
+async def add_rtsp_camera(request: Request):
+    body = await request.json()
+    camera_id = body.get("camera_id", "cam_rtsp_1")
+    source = body.get("source", "")
+    role = body.get("role", "both")
+    capacity = body.get("capacity", 25)
+    selected_model = body.get("selected_model", "rtdetr")
+
+    if not source:
+        raise HTTPException(status_code=400, detail="No source URL provided")
+
+    # Save to config
+    cam = config_loader.add_camera(camera_id=camera_id, source=source, role=role, adapter="rtsp", capacity=capacity, selected_model=selected_model)
+
+    # Hot-start camera thread
+    from api.main import vision_runner
+    if vision_runner is not None:
+        vision_runner.stop_camera(camera_id)
+        import time as _time; _time.sleep(0.3)
+        vision_runner.stopped_cameras.discard(camera_id)
+        cam_config = {
+            "camera_id": camera_id,
+            "adapter": "rtsp",
+            "source": source,
+            "role": role,
+            "cooldown_seconds": 1.5,
+            "frame_skip": 1,
+            "capacity": capacity,
+            "selected_model": selected_model,
+        }
+        t = threading.Thread(
+            target=vision_runner._run_camera,
+            args=(cam_config,),
+            name=f"cam-{camera_id}",
+            daemon=True,
+        )
+        vision_runner.threads.append(t)
+        t.start()
+
+        # Register camera in state manager
+        state_manager.camera_to_zone[camera_id] = "main_floor"
+
+    return {"status": "ok", "camera_id": camera_id, "cameras_added": [camera_id]}
 
 @router.post("/upload-cameras")
 async def upload_cameras(
@@ -108,6 +153,7 @@ async def upload_cameras(
     roles: List[str] = Form(...),
     slots: Optional[List[str]] = Form(None),
     cam_capacities: Optional[List[int]] = Form(None),
+    selected_models: Optional[List[str]] = Form(None),
     capacity: Optional[int] = Form(None),
     capacity_sitting: Optional[int] = Form(None),
     capacity_standing: Optional[int] = Form(None),
@@ -121,34 +167,32 @@ async def upload_cameras(
 
         from api.main import vision_runner
 
-        # Determine target camera IDs in this upload batch
-        new_cam_ids = []
-        for i, file in enumerate(files):
-            if slots and i < len(slots):
-                new_cam_ids.append(slots[i])
-            else:
-                new_cam_ids.append("cam_door_1" if i == 0 else ("cam_room_1" if i == 1 else f"cam_upload_{i+1}"))
-
-        # Stop and remove old cameras that are not in the new batch
-        removed_ids = config_loader.clear_cameras_except(new_cam_ids)
-        if vision_runner:
-            for rid in removed_ids:
-                vision_runner.stop_camera(rid)
-
         for i, file in enumerate(files):
             role = roles[i] if i < len(roles) else "entry_exit"
-            cam_id = new_cam_ids[i]
+            
+            # Use explicit UI slot if provided, else fallback to index
+            if slots and i < len(slots):
+                cam_id = slots[i]
+            else:
+                if i == 0:
+                    cam_id = "cam_door_1"
+                elif i == 1:
+                    cam_id = "cam_room_1"
+                else:
+                    cam_id = f"cam_upload_{i+1}"
+                
             dest = f"data/sample_videos/{file.filename}"
 
             with open(dest, "wb") as f:
                 while chunk := await file.read(1024 * 1024):
                     f.write(chunk)
 
-            # Get per-camera capacity if provided
+            # Get per-camera capacity and model if provided
             cam_cap = cam_capacities[i] if (cam_capacities and i < len(cam_capacities)) else capacity
+            cam_model = selected_models[i] if (selected_models and i < len(selected_models)) else "rtdetr"
 
             # Add camera to config (saves to site_config.yaml)
-            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role, capacity=cam_cap)
+            cam = config_loader.add_camera(camera_id=cam_id, source=dest, role=role, capacity=cam_cap, selected_model=cam_model)
             added.append(cam_id)
             
             # Hot-start a new camera thread in the running pipeline
@@ -164,6 +208,7 @@ async def upload_cameras(
                     "role": role,
                     "cooldown_seconds": 2.0,
                     "frame_skip": 3,
+                    "selected_model": cam_model,
                 }
                 t = threading.Thread(
                     target=vision_runner._run_camera,
@@ -176,18 +221,13 @@ async def upload_cameras(
 
             # Register camera into the live state_manager so its events update the dashboard
             default_zone = list(state_manager.zones.keys())[0] if state_manager.zones else None
-            if default_zone:
+            if default_zone and cam_id not in state_manager.camera_to_zone:
                 state_manager.camera_to_zone[cam_id] = default_zone
 
         return {"status": "ok", "cameras_added": added}
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
-@router.post("/cameras/{camera_id}/capacity")
-def set_camera_capacity(camera_id: str, capacity: int = Form(...)):
-    config_loader.update_camera_capacity(camera_id, capacity)
-    return {"status": "ok", "camera_id": camera_id, "capacity": capacity}
 
 @router.delete("/cameras/{camera_id}")
 def delete_camera(camera_id: str):
@@ -202,6 +242,11 @@ def delete_camera(camera_id: str):
         del state_manager.camera_to_zone[camera_id]
         
     return {"status": "ok", "message": f"Deleted {camera_id}"}
+
+@router.post("/cameras/{camera_id}/capacity")
+def set_camera_capacity(camera_id: str, capacity: int = Form(...)):
+    config_loader.update_camera_capacity(camera_id, capacity)
+    return {"status": "ok", "camera_id": camera_id, "capacity": capacity}
 
 @router.post("/cameras/{camera_id}/pause")
 def pause_camera(camera_id: str):
@@ -246,5 +291,5 @@ async def video_feed(camera_id: str, request: Request):
                 if frame:
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.067)  # ~15fps
     return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")

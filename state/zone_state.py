@@ -24,10 +24,11 @@ class ZoneState:
         for cam in zone_config.get("cameras", []):
             cam_id = cam["camera_id"]
             role = cam.get("role", "entry_exit")
+            cam_cap = cam.get("capacity", self.capacity_max)
             self.camera_stats[cam_id] = {
                 "camera_id": cam_id,
                 "role": role,
-                "capacity": cam.get("capacity", self.capacity_max)
+                "capacity": cam_cap
             }
             if role in ["entry_exit", "both"]:
                 self.camera_stats[cam_id]["entered_today"] = 0
@@ -36,8 +37,17 @@ class ZoneState:
                 self.camera_stats[cam_id]["sitting"] = 0
                 self.camera_stats[cam_id]["standing"] = 0
         
-        self.track_timeout_seconds = 15.0 # Timeout for stale tracks (15s to prevent pause flickering)
+        self.track_timeout_seconds = 60.0 # Timeout for stale tracks (60s to prevent pause flickering)
         self.last_event_time = 0.0
+        # Smoothing: only update occupancy when count is stable
+        self._raw_occupancy = 0
+        self._stable_occupancy = 0
+        self._stable_count_streak = 0
+        self.STABLE_STREAK_NEEDED = 1  # Instant occupancy updates
+
+    def update_camera_capacity(self, camera_id: str, capacity: int):
+        if camera_id in self.camera_stats:
+            self.camera_stats[camera_id]["capacity"] = capacity
 
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if capacity_sitting is not None:
@@ -46,24 +56,17 @@ class ZoneState:
             self.capacity_standing_max = capacity_standing
         if capacity is not None:
             self.capacity_max = capacity
-        elif capacity_sitting is not None or capacity_standing is not None:
-            self.capacity_max = self.capacity_sitting_max + self.capacity_standing_max
-
-    def update_camera_capacity(self, camera_id: str, capacity: int):
-        if camera_id in self.camera_stats:
-            self.camera_stats[camera_id]["capacity"] = capacity
-        else:
-            self.camera_stats[camera_id] = {
-                "camera_id": camera_id,
-                "role": "both",
-                "capacity": capacity
-            }
+            for stats in self.camera_stats.values():
+                if "capacity" not in stats or stats["capacity"] is None:
+                    stats["capacity"] = capacity
 
     def reset(self):
         self.entered_today = 0
         self.exited_today = 0
         self.active_tracks = {}
-        self.smoothed_occupancy = 0
+        self._raw_occupancy = 0
+        self._stable_occupancy = 0
+        self._stable_count_streak = 0
         for cam_id, stats in self.camera_stats.items():
             if "entered_today" in stats:
                 stats["entered_today"] = 0
@@ -74,7 +77,7 @@ class ZoneState:
 
     def _cleanup_stale_tracks(self, current_time: float):
         # Do not expire tracks if system is paused (no recent events within last 3 seconds)
-        if self.last_event_time > 0 and (current_time - self.last_event_time) > 3.0:
+        if self.last_event_time > 0 and (current_time - self.last_event_time) > 10.0:
             return
             
         stale_ids = [
@@ -94,10 +97,10 @@ class ZoneState:
         
         # Dynamically add camera to stats if it was uploaded after startup
         if cam_id and cam_id not in self.camera_stats:
-            # We don't know the exact role, but we can enable all stats fields just in case
             self.camera_stats[cam_id] = {
                 "camera_id": cam_id,
                 "role": "both",
+                "capacity": self.capacity_max,
                 "entered_today": 0,
                 "exited_today": 0,
                 "sitting": 0,
@@ -116,14 +119,12 @@ class ZoneState:
         track_id = event.get("track_id")
         posture = event.get("posture")
         
-        # Namespace track_id with camera_id to prevent multi-camera ID collisions
-        if track_id is not None and cam_id:
-            scoped_track_id = f"{cam_id}_{track_id}"
+        if track_id is not None:
             if ev_type == "exited":
-                if scoped_track_id in self.active_tracks:
-                    del self.active_tracks[scoped_track_id]
+                if track_id in self.active_tracks:
+                    del self.active_tracks[track_id]
             else:
-                self.active_tracks[scoped_track_id] = {
+                self.active_tracks[track_id] = {
                     "timestamp": current_time,
                     "posture": posture if posture else "unknown",
                     "camera_id": cam_id
@@ -131,8 +132,21 @@ class ZoneState:
 
     @property
     def current_occupancy(self) -> int:
+        raw = len(self.active_tracks)
+        # Stabilise: only move the displayed count when we see the same raw value
+        # for STABLE_STREAK_NEEDED consecutive reads (prevents per-frame bouncing)
+        if raw == self._raw_occupancy:
+            self._stable_count_streak += 1
+        else:
+            self._stable_count_streak = 0
+        self._raw_occupancy = raw
+
+        if self._stable_count_streak >= self.STABLE_STREAK_NEEDED or raw > self._stable_occupancy:
+            # Accept increases immediately; only accept decreases when stable
+            self._stable_occupancy = raw
+
         if self.active_tracks:
-            return len(self.active_tracks)
+            return self._stable_occupancy
         elif self.has_entry_exit_cams:
             return max(0, self.entered_today - self.exited_today)
         else:
@@ -168,11 +182,8 @@ class ZoneState:
         self._cleanup_stale_tracks(time.time())
         
         # Tally current posture and distinct occupancy per camera
-        num_cams = max(1, len(self.camera_stats))
         for cam_id, stats in self.camera_stats.items():
             cam_count = sum(1 for data in self.active_tracks.values() if data.get("camera_id") == cam_id)
-            if cam_count == 0 and len(self.active_tracks) > 0:
-                cam_count = max(1, len(self.active_tracks) // num_cams)
             cam_cap = stats.get("capacity", self.capacity_max)
             stats["capacity"] = cam_cap
             stats["current_occupancy"] = cam_count

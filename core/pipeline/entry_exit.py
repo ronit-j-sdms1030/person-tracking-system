@@ -6,10 +6,9 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 # Tunable constants (adjust during Day-2 validation)
 # ─────────────────────────────────────────────────────────────────────────────
-FRAMES_TO_CONFIRM_EXIT = 8   # track must be ABSENT this many consecutive frames
-                              # before "exited" fires — prevents false exits on
-                              # momentary occlusion or a missed detection
-COOLDOWN_SECONDS       = 2.0 # minimum seconds before the same track_id can fire
+FRAMES_TO_CONFIRM_EXIT = 6  # track must be ABSENT this many consecutive frames
+                              # before "exited" fires — updates occupancy quickly
+COOLDOWN_SECONDS       = 1.0 # minimum seconds before the same track_id can fire
                               # another event (overridden by cam config if present)
 
 

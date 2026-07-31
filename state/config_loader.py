@@ -10,19 +10,7 @@ class ConfigLoader:
 
     def load_and_validate(self):
         if not os.path.exists(self.config_path):
-            os.makedirs(os.path.dirname(self.config_path) or ".", exist_ok=True)
-            default_config = {
-                "site_id": "stark_demo_site",
-                "zones": [{
-                    "zone_id": "main_floor",
-                    "capacity_max": 25,
-                    "capacity_sitting_max": 15,
-                    "capacity_standing_max": 10,
-                    "cameras": []
-                }]
-            }
-            with open(self.config_path, "w") as f:
-                yaml.safe_dump(default_config, f, sort_keys=False)
+            raise FileNotFoundError(f"Config file not found: {self.config_path}")
         
         with open(self.config_path, "r") as f:
             data = yaml.safe_load(f)
@@ -57,7 +45,7 @@ class ConfigLoader:
         self.raw_data = data
         return data
 
-    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file", capacity: int = None):
+    def add_camera(self, camera_id: str, source: str, role: str, adapter: str = "file", capacity: int = None, selected_model: str = "rtdetr"):
         if not self.raw_data:
             # Load raw data directly without triggering full validation
             with open(self.config_path, "r") as f:
@@ -74,6 +62,7 @@ class ConfigLoader:
             existing["source"] = source
             existing["role"] = role
             existing["adapter"] = adapter
+            existing["selected_model"] = selected_model
             if capacity is not None:
                 existing["capacity"] = capacity
             self._save()
@@ -85,6 +74,7 @@ class ConfigLoader:
             "source": source,
             "role": role,
             "frame_skip": 1,
+            "selected_model": selected_model,
         }
         if capacity is not None:
             new_cam["capacity"] = capacity
@@ -95,6 +85,21 @@ class ConfigLoader:
         zone["cameras"].append(new_cam)
         self._save()
         return new_cam
+
+    def remove_camera(self, camera_id: str) -> bool:
+        if not self.raw_data:
+            with open(self.config_path, "r") as f:
+                self.raw_data = yaml.safe_load(f)
+            if self.raw_data["zones"][0].get("cameras") is None:
+                self.raw_data["zones"][0]["cameras"] = []
+                
+        zone = self.raw_data["zones"][0]
+        original_len = len(zone["cameras"])
+        zone["cameras"] = [c for c in zone["cameras"] if c["camera_id"] != camera_id]
+        if len(zone["cameras"]) < original_len:
+            self._save()
+            return True
+        return False
 
     def update_camera_capacity(self, camera_id: str, capacity: int):
         if not self.raw_data:
@@ -110,37 +115,6 @@ class ConfigLoader:
         state_manager.update_camera_capacity(camera_id, capacity)
         return True
 
-    def remove_camera(self, camera_id: str) -> bool:
-        if not self.raw_data:
-            with open(self.config_path, "r") as f:
-                self.raw_data = yaml.safe_load(f)
-            if self.raw_data["zones"][0].get("cameras") is None:
-                self.raw_data["zones"][0]["cameras"] = []
-                
-        zone = self.raw_data["zones"][0]
-        original_len = len(zone["cameras"])
-        zone["cameras"] = [c for c in zone["cameras"] if c["camera_id"] != camera_id]
-        if len(zone["cameras"]) < original_len:
-            self._save()
-            return True
-    def clear_cameras_except(self, keep_ids: list):
-        if not self.raw_data:
-            with open(self.config_path, "r") as f:
-                self.raw_data = yaml.safe_load(f)
-        zone = self.raw_data["zones"][0]
-        cams = zone.get("cameras", [])
-        removed_ids = [c["camera_id"] for c in cams if c["camera_id"] not in keep_ids]
-        zone["cameras"] = [c for c in cams if c["camera_id"] in keep_ids]
-        self._save()
-        from state.event_queue import state_manager
-        for rid in removed_ids:
-            if rid in state_manager.camera_to_zone:
-                del state_manager.camera_to_zone[rid]
-            for z in state_manager.zones.values():
-                if rid in z.camera_stats:
-                    del z.camera_stats[rid]
-        return removed_ids
-
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if not self.raw_data:
             with open(self.config_path, "r") as f:
@@ -153,6 +127,9 @@ class ConfigLoader:
             zone["capacity_standing_max"] = capacity_standing
         if capacity is not None:
             zone["capacity_max"] = capacity
+            # Also update cameras without individual capacities
+            for cam in zone.get("cameras", []):
+                cam["capacity"] = capacity
         elif capacity_sitting is not None or capacity_standing is not None:
             zone["capacity_max"] = (zone.get("capacity_sitting_max", 15) + zone.get("capacity_standing_max", 10))
             

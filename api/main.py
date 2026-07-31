@@ -11,7 +11,8 @@ def _patched_signal(signum, handler):
             global vision_runner
             if vision_runner:
                 vision_runner.running = False
-            return handler(*args, **kwargs)
+            if callable(handler):
+                return handler(*args, **kwargs)
         return _original_signal(signum, _wrapper)
     return _original_signal(signum, handler)
 signal.signal = _patched_signal
@@ -71,16 +72,54 @@ app.include_router(ws_router)
 
 # Mount static files for dashboard
 os.makedirs("dashboard/static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
+
+from fastapi import Response as FastAPIResponse
+from starlette.staticfiles import StaticFiles as BaseStaticFiles
+from starlette.types import Scope, Receive, Send
+
+class NoCacheStaticFiles(BaseStaticFiles):
+    """Serve static files with no-cache headers so hard refresh always loads fresh JS/CSS."""
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async def send_with_no_cache(message):
+            if message["type"] == "http.response.start":
+                headers = dict(message.get("headers", []))
+                headers[b"cache-control"] = b"no-store, no-cache, must-revalidate, max-age=0"
+                headers[b"pragma"] = b"no-cache"
+                headers[b"expires"] = b"0"
+                message["headers"] = list(headers.items())
+            await send(message)
+        await super().__call__(scope, receive, send_with_no_cache)
+
+app.mount("/static", NoCacheStaticFiles(directory="dashboard/static"), name="static")
 
 import uuid
-SERVER_SESSION_SECRET = str(uuid.uuid4())
+SESSION_SECRET_FILE = ".session_secret"
+if os.path.exists(SESSION_SECRET_FILE):
+    try:
+        with open(SESSION_SECRET_FILE, "r") as f:
+            SERVER_SESSION_SECRET = f.read().strip()
+    except Exception:
+        SERVER_SESSION_SECRET = str(uuid.uuid4())
+else:
+    SERVER_SESSION_SECRET = str(uuid.uuid4())
+    try:
+        with open(SESSION_SECRET_FILE, "w") as f:
+            f.write(SERVER_SESSION_SECRET)
+    except Exception:
+        pass
 
 @app.get("/")
 def serve_dashboard(request: Request):
     if request.cookies.get("session") != SERVER_SESSION_SECRET:
         return RedirectResponse("/login")
-    return FileResponse("dashboard/index.html")
+    return FileResponse(
+        "dashboard/index.html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 @app.get("/login")
 def serve_login():
@@ -89,16 +128,23 @@ def serve_login():
 @app.post("/login")
 def login(response: Response, username: str = Form(...), password: str = Form(...)):
     if username == "admin" and password == "password":
-        response = Response(status_code=200)
-        response.set_cookie(key="session", value=SERVER_SESSION_SECRET, httponly=True)
-        return response
+        res = Response(status_code=200)
+        res.set_cookie(
+            key="session", 
+            value=SERVER_SESSION_SECRET, 
+            httponly=True,
+            max_age=2592000,
+            path="/",
+            samesite="lax"
+        )
+        return res
     return Response(status_code=401)
 
 @app.get("/logout")
 def logout(response: Response):
-    response = RedirectResponse("/login")
-    response.delete_cookie("session")
-    return response
+    res = RedirectResponse("/login")
+    res.delete_cookie("session", path="/")
+    return res
 
 if __name__ == "__main__":
     import uvicorn

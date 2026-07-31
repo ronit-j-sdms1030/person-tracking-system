@@ -7,5 +7,10 @@ __pycache__/
 logs/*.csv
 logs/*.json
 data/sample_videos/*.mp4
+data/sample_videos/*.mov
+*.zip
+logs/events.jsonl
 .DS_Store
 runs/
+.session_secret
+
