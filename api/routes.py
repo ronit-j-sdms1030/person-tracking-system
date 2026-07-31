@@ -48,8 +48,10 @@ zones:
   cameras: []
 """
     os.makedirs("config", exist_ok=True)
-    with open("config/site_config.yaml", "w") as f:
+    temp_path = "config/site_config.yaml.tmp"
+    with open(temp_path, "w") as f:
         f.write(baseline_yaml)
+    os.replace(temp_path, "config/site_config.yaml")
 
     # 2. Stop camera threads & clear frame cache
     if vision_runner:
@@ -63,8 +65,7 @@ zones:
             vision_runner.latest_frames.clear()
         if hasattr(vision_runner, "adapters"):
             vision_runner.adapters.clear()
-        if hasattr(vision_runner, "stopped_cameras"):
-            vision_runner.stopped_cameras.clear()
+        # DO NOT clear stopped_cameras, otherwise threads that took >3s to join will zombie and cause SegFaults!
 
     # 3. Clear state manager camera mapping and zone state
     state_manager.camera_to_zone.clear()
