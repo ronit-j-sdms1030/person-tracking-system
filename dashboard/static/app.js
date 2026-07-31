@@ -168,13 +168,14 @@ function renderZone(zoneData) {
 
  // Update distinct stats specifically for this camera feed
  const camPresent = cam.current_occupancy !== undefined ? cam.current_occupancy : present;
- const camRemain = Math.max(0, cap - camPresent);
+ const camCap = cam.capacity !== undefined ? cam.capacity : cap;
+ const camRemain = Math.max(0, camCap - camPresent);
 
  const elCap = document.getElementById(`${prefix}-cap`);
  const elPresent = document.getElementById(`${prefix}-present`);
  const elRemaining = document.getElementById(`${prefix}-remaining`);
  
- if (elCap) elCap.textContent = cap;
+ if (elCap) elCap.textContent = camCap;
  if (elPresent) elPresent.textContent = camPresent;
  if (elRemaining) elRemaining.textContent = camRemain;
 
@@ -357,7 +358,6 @@ function buildCameraCards(cameraList) {
  </div>
  <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c${num}-present">0</div><div class="lbl">Present</div></div>
  <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c${num}-remaining">0</div><div class="lbl">Remaining</div></div>
- <div class="chip c${num}-posture" style="--chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c${num}-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c${num}-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c${num}-sitting-rem">15</span> rem)</div></div>
  </div>
  </div>
  </div>`;
@@ -383,6 +383,7 @@ function handleInitialState(data) {
  if (data.main_floor) {
  if (data.main_floor.cameras && data.main_floor.cameras.length > 0) {
  buildCameraCards(data.main_floor.cameras);
+ if (typeof revealDashboardPanels === 'function') revealDashboardPanels(data.main_floor.cameras.length);
  }
  renderZone(data.main_floor);
  }
