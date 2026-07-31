@@ -133,8 +133,10 @@ class ConfigLoader:
         elif capacity_sitting is not None or capacity_standing is not None:
             zone["capacity_max"] = (zone.get("capacity_sitting_max", 15) + zone.get("capacity_standing_max", 10))
             
-        with open(self.config_path, "w") as f:
+        temp_path = self.config_path + ".tmp"
+        with open(temp_path, "w") as f:
             yaml.safe_dump(self.raw_data, f, sort_keys=False)
+        os.replace(temp_path, self.config_path)
         
         # We need to tell the state manager about this update so it reflects live
         from state.event_queue import state_manager
@@ -142,8 +144,10 @@ class ConfigLoader:
         return True
 
     def _save(self):
-        with open(self.config_path, "w") as f:
+        temp_path = self.config_path + ".tmp"
+        with open(temp_path, "w") as f:
             yaml.safe_dump(self.raw_data, f, sort_keys=False)
+        os.replace(temp_path, self.config_path)
 
 def get_config(config_path: str = "config/site_config.yaml"):
     loader = ConfigLoader(config_path)
