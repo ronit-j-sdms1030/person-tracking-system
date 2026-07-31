@@ -245,18 +245,25 @@ class Detector:
                     
                 aspect_ratio = w / h
                 
-                # Strict Head Aspect Ratio (0.4 to 1.7) & Size Limits (12px to 250px)
-                # This eliminates knees, shoes, and arms which tend to be elongated or too large
-                if not (0.4 <= aspect_ratio <= 1.7):
-                    continue
-                if not (12 <= w <= 250 and 12 <= h <= 250):
-                    continue
-                    
-                # Ignore false positives at the very bottom edge of the frame
-                # In a 540p image, heads are rarely below y=510 unless the person is crawling
-                cy = box[1] + (h / 2.0)
-                if cy > 510:
-                    continue
+                if self.selected_model == "yolo":
+                    # YOLO is a Full Body tracker
+                    # Bodies are tall (low aspect ratio) and can take up most of the frame height
+                    if not (0.2 <= aspect_ratio <= 1.5):
+                        continue
+                    if not (15 <= w <= 800 and 30 <= h <= 500):
+                        continue
+                else:
+                    # RT-DETR is a Head tracker
+                    # Heads are roughly square and much smaller
+                    if not (0.4 <= aspect_ratio <= 1.7):
+                        continue
+                    if not (12 <= w <= 250 and 12 <= h <= 250):
+                        continue
+                        
+                    # Ignore false positives at the very bottom edge of the frame (for heads only)
+                    cy = box[1] + (h / 2.0)
+                    if cy > 510:
+                        continue
 
                 track_id = None
                 if boxes[i].id is not None:
