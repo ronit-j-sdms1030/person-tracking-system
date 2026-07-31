@@ -43,7 +43,7 @@ class ZoneState:
         self._raw_occupancy = 0
         self._stable_occupancy = 0
         self._stable_count_streak = 0
-        self.STABLE_STREAK_NEEDED = 1  # Instant occupancy updates
+        self.STABLE_STREAK_NEEDED = 10  # Require 10 consecutive frames (~0.5s) of stability before updating counts
 
     def update_camera_capacity(self, camera_id: str, capacity: int):
         if camera_id in self.camera_stats:
@@ -145,7 +145,7 @@ class ZoneState:
             # Accept increases immediately; only accept decreases when stable
             self._stable_occupancy = raw
 
-        if self.active_tracks:
+        if self._stable_occupancy > 0:
             return self._stable_occupancy
         elif self.has_entry_exit_cams:
             return max(0, self.entered_today - self.exited_today)
@@ -184,10 +184,28 @@ class ZoneState:
         # Tally current posture and distinct occupancy per camera
         for cam_id, stats in self.camera_stats.items():
             cam_count = sum(1 for data in self.active_tracks.values() if data.get("camera_id") == cam_id)
+            
+            # Per-camera count smoothing
+            if "_raw" not in stats:
+                stats["_raw"] = 0
+                stats["_stable"] = 0
+                stats["_streak"] = 0
+                
+            if cam_count == stats["_raw"]:
+                stats["_streak"] += 1
+            else:
+                stats["_streak"] = 0
+            stats["_raw"] = cam_count
+            
+            if stats["_streak"] >= self.STABLE_STREAK_NEEDED or cam_count > stats["_stable"]:
+                stats["_stable"] = cam_count
+                
+            display_count = stats["_stable"]
+            
             cam_cap = stats.get("capacity", self.capacity_max)
             stats["capacity"] = cam_cap
-            stats["current_occupancy"] = cam_count
-            stats["remaining_capacity"] = max(0, cam_cap - cam_count)
+            stats["current_occupancy"] = display_count
+            stats["remaining_capacity"] = max(0, cam_cap - display_count)
             if "sitting" in stats:
                 stats["sitting"] = 0
                 stats["standing"] = 0

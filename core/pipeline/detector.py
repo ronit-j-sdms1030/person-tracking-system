@@ -183,7 +183,7 @@ class Detector:
         # RT-DETR (general model) needs higher conf to avoid furniture/sofa false positives
         # Fine-tuned YOLO is purpose-trained so can run at lower conf safely
         if self.selected_model == "yolo":
-            infer_conf = 0.25  # Force 0.25 (overrides generic 0.45)
+            infer_conf = 0.40  # Increased for safety to reduce false positives
             infer_iou  = 0.40
             # CLAHE: boost local contrast so dark-toned heads under CCTV lighting become visible
             import cv2 as _cv2
@@ -193,7 +193,7 @@ class Detector:
             l = _clahe.apply(l)
             infer_frame = _cv2.cvtColor(_cv2.merge([l, a, b_ch]), _cv2.COLOR_LAB2BGR)
         else:  # rtdetr
-            infer_conf = 0.66  # Force 0.66 (overrides generic 0.45)
+            infer_conf = 0.75  # Increased for safety to reduce false positives
             infer_iou  = 0.30  # Very aggressive NMS — eliminates double boxes
             infer_frame = frame
 
