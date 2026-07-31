@@ -193,7 +193,7 @@ class Detector:
             l = _clahe.apply(l)
             infer_frame = _cv2.cvtColor(_cv2.merge([l, a, b_ch]), _cv2.COLOR_LAB2BGR)
         else:  # rtdetr
-            infer_conf = 0.75  # Increased for safety to reduce false positives
+            infer_conf = 0.55  # Reduced from 0.75 to capture more genuine heads
             infer_iou  = 0.30  # Very aggressive NMS — eliminates double boxes
             infer_frame = frame
 
@@ -245,17 +245,17 @@ class Detector:
                     
                 aspect_ratio = w / h
                 
-                # Strict Head Aspect Ratio (0.5 to 1.5) & Size Limits (15px to 180px)
+                # Strict Head Aspect Ratio (0.4 to 1.7) & Size Limits (12px to 250px)
                 # This eliminates knees, shoes, and arms which tend to be elongated or too large
-                if not (0.5 <= aspect_ratio <= 1.5):
+                if not (0.4 <= aspect_ratio <= 1.7):
                     continue
-                if not (15 <= w <= 180 and 15 <= h <= 180):
+                if not (12 <= w <= 250 and 12 <= h <= 250):
                     continue
                     
                 # Ignore false positives at the very bottom edge of the frame
-                # In a 540p image, heads are rarely below y=490 unless the person is crawling
+                # In a 540p image, heads are rarely below y=510 unless the person is crawling
                 cy = box[1] + (h / 2.0)
-                if cy > 490:
+                if cy > 510:
                     continue
 
                 track_id = None
