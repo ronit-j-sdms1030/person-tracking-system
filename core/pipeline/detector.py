@@ -206,9 +206,8 @@ class Detector:
                     else:
                         results = self.body_model(infer_frame, conf=infer_conf, iou=infer_iou, imgsz=640, verbose=False)
                 primary_dets = self._parse_results(results)
-                # RT-DETR uses transformer matching — apply explicit Python NMS to remove duplicates
-                if self.selected_model != "yolo":
-                    primary_dets = _apply_nms(primary_dets, iou_threshold=0.35)
+                # Apply explicit Python NMS globally to remove duplicates natively produced by models
+                primary_dets = _apply_nms(primary_dets, iou_threshold=0.35)
             except Exception as e:
                 logger.warning(f"Primary head detection error, falling back to YOLO: {e}")
 
