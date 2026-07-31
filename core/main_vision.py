@@ -292,17 +292,6 @@ class VisionRunner:
     def stop_camera(self, camera_id: str, wait: bool = True):
         logger.info(f"Stopping camera {camera_id}...")
         self.stopped_cameras.add(camera_id)
-        
-        # Release the adapter (closes OpenCV VideoCapture) so file handle is freed
-        if hasattr(self, 'adapters') and camera_id in self.adapters:
-            try:
-                adapter = self.adapters.pop(camera_id)
-                if hasattr(adapter, 'cap') and adapter.cap is not None:
-                    adapter.cap.release()
-                elif hasattr(adapter, 'release'):
-                    adapter.release()
-            except Exception as e:
-                logger.warning(f"[{camera_id}] Error releasing adapter: {e}")
 
         # Clear latest frame for this camera
         if camera_id in self.latest_frames:
