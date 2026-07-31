@@ -181,7 +181,7 @@ async def upload_cameras(
                 else:
                     cam_id = f"cam_upload_{i+1}"
                 
-            dest = f"data/sample_videos/{file.filename}"
+            dest = f"data/sample_videos/{cam_id}_{file.filename}"
 
             with open(dest, "wb") as f:
                 while chunk := await file.read(1024 * 1024):
