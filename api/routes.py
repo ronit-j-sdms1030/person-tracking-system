@@ -203,6 +203,7 @@ async def upload_cameras(
 
                 # Reset stale state for this camera slot before starting fresh
                 state_manager.camera_to_zone[cam_id] = list(state_manager.zones.keys())[0] if state_manager.zones else "main_floor"
+                state_manager.reset_camera(cam_id)
                     
                 cam_config = {
                     "camera_id": cam_id,

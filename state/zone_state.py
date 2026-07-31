@@ -49,6 +49,20 @@ class ZoneState:
         if camera_id in self.camera_stats:
             self.camera_stats[camera_id]["capacity"] = capacity
 
+    def reset_camera(self, camera_id: str):
+        if camera_id in self.camera_stats:
+            self.camera_stats[camera_id]["entered_today"] = 0
+            self.camera_stats[camera_id]["exited_today"] = 0
+            self.camera_stats[camera_id]["sitting"] = 0
+            self.camera_stats[camera_id]["standing"] = 0
+            self.camera_stats[camera_id]["_raw"] = 0
+            self.camera_stats[camera_id]["_stable"] = 0
+            self.camera_stats[camera_id]["_streak"] = 0
+            
+        stale_ids = [tid for tid, data in self.active_tracks.items() if data.get("camera_id") == camera_id]
+        for tid in stale_ids:
+            del self.active_tracks[tid]
+
     def update_capacity(self, capacity: int = None, capacity_sitting: int = None, capacity_standing: int = None):
         if capacity_sitting is not None:
             self.capacity_sitting_max = capacity_sitting
