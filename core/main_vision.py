@@ -58,6 +58,7 @@ class VisionRunner:
         self.running = False
         self.adapters = {}
         self.latest_frames = {}
+        self.camera_threads = {}  # camera_id -> Thread, for targeted joins
         self.stopped_cameras = set()
         self.paused_cameras = set()
 
@@ -82,6 +83,9 @@ class VisionRunner:
         if not hasattr(self, 'adapters'):
             self.adapters = {}
         self.adapters[camera_id] = cam_source
+        if not hasattr(self, 'camera_threads'):
+            self.camera_threads = {}
+        self.camera_threads[camera_id] = threading.current_thread()
         
         model_path = cam_config.get("model_path", "rtdetr-l.pt")
         fallback_model = cam_config.get("fallback_model_path", "yolo11m.pt")
@@ -285,11 +289,33 @@ class VisionRunner:
             t.join(timeout=10)
         logger.info("All threads stopped.")
         
-    def stop_camera(self, camera_id: str):
+    def stop_camera(self, camera_id: str, wait: bool = True):
         logger.info(f"Stopping camera {camera_id}...")
         self.stopped_cameras.add(camera_id)
+        
+        # Release the adapter (closes OpenCV VideoCapture) so file handle is freed
+        if hasattr(self, 'adapters') and camera_id in self.adapters:
+            try:
+                adapter = self.adapters.pop(camera_id)
+                if hasattr(adapter, 'cap') and adapter.cap is not None:
+                    adapter.cap.release()
+                elif hasattr(adapter, 'release'):
+                    adapter.release()
+            except Exception as e:
+                logger.warning(f"[{camera_id}] Error releasing adapter: {e}")
+
+        # Clear latest frame for this camera
         if camera_id in self.latest_frames:
             del self.latest_frames[camera_id]
+
+        # Wait for the thread to actually finish (up to 3s) to avoid race conditions
+        if wait and hasattr(self, 'camera_threads') and camera_id in self.camera_threads:
+            old_thread = self.camera_threads.get(camera_id)
+            if old_thread and old_thread.is_alive():
+                old_thread.join(timeout=3.0)
+                if old_thread.is_alive():
+                    logger.warning(f"[{camera_id}] Thread did not stop within 3s — proceeding anyway")
+            self.camera_threads.pop(camera_id, None)
             
     def pause_camera(self, camera_id: str):
         self.paused_cameras.add(camera_id)

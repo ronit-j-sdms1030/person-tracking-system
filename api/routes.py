@@ -120,8 +120,8 @@ async def add_rtsp_camera(request: Request):
     # Hot-start camera thread
     from api.main import vision_runner
     if vision_runner is not None:
-        vision_runner.stop_camera(camera_id)
-        import time as _time; _time.sleep(0.3)
+        vision_runner.stop_camera(camera_id, wait=True)
+        import time as _time; _time.sleep(0.1)
         vision_runner.stopped_cameras.discard(camera_id)
         cam_config = {
             "camera_id": camera_id,
@@ -197,9 +197,12 @@ async def upload_cameras(
             
             # Hot-start a new camera thread in the running pipeline
             if vision_runner is not None:
-                vision_runner.stop_camera(cam_id)
-                time.sleep(0.3)
+                # stop_camera now joins the old thread — no sleep needed
+                vision_runner.stop_camera(cam_id, wait=True)
                 vision_runner.stopped_cameras.discard(cam_id)
+
+                # Reset stale state for this camera slot before starting fresh
+                state_manager.camera_to_zone[cam_id] = list(state_manager.zones.keys())[0] if state_manager.zones else "main_floor"
                     
                 cam_config = {
                     "camera_id": cam_id,
@@ -218,11 +221,6 @@ async def upload_cameras(
                 )
                 vision_runner.threads.append(t)
                 t.start()
-
-            # Register camera into the live state_manager so its events update the dashboard
-            default_zone = list(state_manager.zones.keys())[0] if state_manager.zones else None
-            if default_zone and cam_id not in state_manager.camera_to_zone:
-                state_manager.camera_to_zone[cam_id] = default_zone
 
         return {"status": "ok", "cameras_added": added}
 
