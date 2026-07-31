@@ -876,6 +876,18 @@ function revealDashboardPanels(cameraCount) {
  if (summary) summary.style.display = 'flex';
  if (analytics) analytics.style.display = 'block';
 
+ // Show/hide CAM 2 trend card and adjust grid columns based on camera count
+ const cam2TrendCard = document.getElementById('cam2-trend-card');
+ const chartsGrid = document.getElementById('analytics-charts-grid');
+ window.activeCamCount = cameraCount;
+ if (cameraCount <= 1) {
+   if (cam2TrendCard) cam2TrendCard.style.display = 'none';
+   if (chartsGrid) chartsGrid.style.gridTemplateColumns = '1fr';
+ } else {
+   if (cam2TrendCard) cam2TrendCard.style.display = '';
+   if (chartsGrid) chartsGrid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+ }
+
  // Build single-camera view navigation buttons for all configured cameras
  const selectDiv = document.getElementById('cam-select');
  if (selectDiv) {
@@ -884,7 +896,9 @@ function revealDashboardPanels(cameraCount) {
  for (let i = 1; i <= count; i++) {
  navHTML += `<button class="${i === 1 ? 'active' : ''}" onclick="selectCam('${i}', this)">Cam ${i}</button>`;
  }
- navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+ if (count > 1) {
+   navHTML += `<button onclick="selectCam('both', this)">Both / Grid (Pairs)</button>`;
+ }
  selectDiv.innerHTML = navHTML;
  }
 }
