@@ -66,7 +66,12 @@ def _apply_nms(detections: List[Dict], iou_threshold: float = 0.10, center_dist_
             a2 = (b2[2]-b2[0]) * (b2[3]-b2[1])
             union = a1 + a2 - inter
             iou = inter / union if union > 0 else 0
-            if iou > iou_threshold:
+            
+            # Intersection over Minimum Area (IoM)
+            # If the smaller box (e.g. a head) is mostly inside the larger box (e.g. a body), merge them
+            iom = inter / min(a1, a2) if min(a1, a2) > 0 else 0
+            
+            if iou > iou_threshold or iom > 0.60:
                 drop = True
                 break
             # Stage 2: Center-distance check

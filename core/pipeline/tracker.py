@@ -60,24 +60,26 @@ class Tracker:
                 for curr_det in detections:
                     b2 = curr_det["bbox"]
                     
-                    # 1. IoU Check
+                    # 1. IoU and IoM Check
                     ix1 = max(b1[0], b2[0]); iy1 = max(b1[1], b2[1])
                     ix2 = min(b1[2], b2[2]); iy2 = min(b1[3], b2[3])
                     iw = max(0, ix2 - ix1); ih = max(0, iy2 - iy1)
                     iou = 0
+                    iom = 0
                     if iw > 0 and ih > 0:
                         inter = iw * ih
                         a1 = (b1[2]-b1[0]) * (b1[3]-b1[1])
                         a2 = (b2[2]-b2[0]) * (b2[3]-b2[1])
                         union = a1 + a2 - inter
                         iou = inter / union if union > 0 else 0
+                        iom = inter / min(a1, a2) if min(a1, a2) > 0 else 0
                         
                     # 2. Center Distance Check
                     cx2 = (b2[0] + b2[2]) / 2.0
                     cy2 = (b2[1] + b2[3]) / 2.0
                     dist = ((cx1 - cx2) ** 2 + (cy1 - cy2) ** 2) ** 0.5
                     
-                    if iou > 0.30 or dist < 80.0:
+                    if iou > 0.30 or iom > 0.60 or dist < 80.0:
                         is_duplicate = True
                         break
                         
