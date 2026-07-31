@@ -245,10 +245,17 @@ class Detector:
                     
                 aspect_ratio = w / h
                 
-                # Head Aspect Ratio (0.35 to 1.9) & Size Limits (8px to 400px)
-                if not (0.35 <= aspect_ratio <= 1.9):
+                # Strict Head Aspect Ratio (0.5 to 1.5) & Size Limits (15px to 180px)
+                # This eliminates knees, shoes, and arms which tend to be elongated or too large
+                if not (0.5 <= aspect_ratio <= 1.5):
                     continue
-                if not (8 <= w <= 400 and 8 <= h <= 400):
+                if not (15 <= w <= 180 and 15 <= h <= 180):
+                    continue
+                    
+                # Ignore false positives at the very bottom edge of the frame
+                # In a 540p image, heads are rarely below y=490 unless the person is crawling
+                cy = box[1] + (h / 2.0)
+                if cy > 490:
                     continue
 
                 track_id = None
