@@ -238,6 +238,11 @@ class Detector:
                 h = box[3] - box[1]
                 if w <= 0 or h <= 0:
                     continue
+                
+                # Only track 'person' class (COCO class 0). Ignore cell phones, bags, chairs, etc.
+                if cls_id != 0:
+                    continue
+                    
                 aspect_ratio = w / h
                 
                 # Head Aspect Ratio (0.35 to 1.9) & Size Limits (8px to 400px)
