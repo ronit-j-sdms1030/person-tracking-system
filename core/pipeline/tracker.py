@@ -50,9 +50,29 @@ class Tracker:
         to_remove = []
         for tid, data in self.lost_tracks.items():
             if tid not in current_mapped_ids:
+                det = data["det"]
+                b1 = det["bbox"]
+                cx1 = (b1[0] + b1[2]) / 2.0
+                cy1 = (b1[1] + b1[3]) / 2.0
+                
+                # Check for spatial overlap with current detections to avoid ghost duplicates
+                is_duplicate = False
+                for curr_det in detections:
+                    b2 = curr_det["bbox"]
+                    cx2 = (b2[0] + b2[2]) / 2.0
+                    cy2 = (b2[1] + b2[3]) / 2.0
+                    dist = ((cx1 - cx2) ** 2 + (cy1 - cy2) ** 2) ** 0.5
+                    if dist < 80.0: # If centers are within 80 pixels, it's the same person with a new ID
+                        is_duplicate = True
+                        break
+                        
+                if is_duplicate:
+                    to_remove.append(tid)
+                    continue
+
                 data["age"] -= 1
                 if data["age"] > 0:
-                    detections.append(data["det"])
+                    detections.append(det)
                 else:
                     to_remove.append(tid)
                     
