@@ -351,8 +351,7 @@
  <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c1-present">0</div><div class="lbl">Present</div></div>
  <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c1-remaining">25</div><div class="lbl">Remaining</div></div>
  
- <div class="chip c1-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c1-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c1-sitting-rem">15</span> rem)</div></div>
- <div class="chip wide c1-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c1-standing-rem">10</span> rem)</div><div class="num"><span id="c1-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c1-standing-max">10</span></span></div></div>
+
  </div>
  </div>
  </div>
@@ -388,8 +387,7 @@
  <div class="chip" style="--chip-bg:var(--chip-green-bg); --chip-color:var(--green);"><div class="num" id="c2-present">0</div><div class="lbl">Present</div></div>
  <div class="chip" style="--chip-bg:var(--chip-amber-bg); --chip-color:var(--amber);"><div class="num" id="c2-remaining">25</div><div class="lbl">Remaining</div></div>
 
- <div class="chip c2-posture" style="display:none; --chip-bg:var(--chip-purple-bg); --chip-color:var(--purple);"><div class="num"><span id="c2-sitting">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-sitting-max">15</span></span></div><div class="lbl">Sitting (<span id="c2-sitting-rem">15</span> rem)</div></div>
- <div class="chip wide c2-posture" style="display:none; --chip-bg:var(--chip-red-bg); --chip-color:var(--red);"><div class="lbl">Standing (<span id="c2-standing-rem">10</span> rem)</div><div class="num"><span id="c2-standing">0</span><span style="font-size:13px; opacity:0.75; font-weight:500;">/<span id="c2-standing-max">10</span></span></div></div>
+
  </div>
  </div>
  </div>
@@ -446,24 +444,7 @@
  </div>
 
  <!-- Interactive Seating Plan & Seat Occupancy Map -->
- <div class="seating-plan-panel" style="display:none; background:var(--panel); border:1px solid var(--panel-border); border-radius:14px; padding:20px; margin-top:20px;">
- <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
- <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:16px; display:flex; align-items:center; gap:8px;">
- <span>Real-Time Seat Layout & Occupancy Blocks</span>
- </h3>
- <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--purple); background:var(--chip-purple-bg); padding:4px 12px; border-radius:12px; border:1px solid var(--panel-border);" id="seat-plan-summary">
- 0 / 15 Seats Occupied (0%)
- </span>
- </div>
- 
- <!-- Seat Visual Progress Bar -->
- <div style="width:100%; height:8px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin-bottom:16px; border:1px solid var(--panel-border);">
- <div id="seat-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #A855F7, #3B82F6); transition:width 0.4s ease;"></div>
- </div>
- 
- <!-- Visual Seat Map Grid -->
- <div id="seat-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(75px, 1fr)); gap:10px;"></div>
- </div>
+
 
  <!-- Upload Panel for dynamic camera addition -->
  <div class="upload-panel" style="background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; padding:20px; margin-top:20px;">
@@ -507,6 +488,7 @@
  formData.append('capacity', val);
  const res = await fetch('/capacity', { method: 'POST', body: formData });
  if (res.ok) {
+ window.userSetCapacity = true; // Prevent renderZone from overwriting user-set value
  alert(` Capacity set to ${val} for all cameras!`);
  if (typeof fetchStatus === 'function') fetchStatus();
  } else {

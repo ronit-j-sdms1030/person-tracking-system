@@ -190,9 +190,9 @@ function renderZone(zoneData) {
  });
  }
 
- // Update quick capacity input value if present
+ // Update quick capacity input ONLY if user has not manually set it
  const quickCapInput = document.getElementById('quick-capacity-input');
- if (quickCapInput && document.activeElement !== quickCapInput) {
+ if (quickCapInput && document.activeElement !== quickCapInput && !window.userSetCapacity) {
  quickCapInput.value = cap;
  }
 
