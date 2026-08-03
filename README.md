@@ -1,105 +1,72 @@
-# person-tracking-system
+# Person Tracking System (Stark Vision)
 
-## Person A — Vision & Tracking Core
+A robust, real-time multicamera computer vision pipeline designed for tracking people, analyzing postures, and monitoring zone capacities using state-of-the-art AI models (YOLO and RT-DETR). 
 
-This repository contains the **vision and tracking** half of the CCTV people-counting prototype, built by **Person A** against the shared contract defined in `contract.md`.
+## 🚀 Features
 
----
+* **Multi-Camera Support:** Seamlessly connect RTSP streams, local MP4 files, or USB webcams. Each camera runs on its own isolated background thread for zero-lag performance.
+* **Dual-Model Architecture:** 
+  * **YOLO (Full Body):** Fine-tuned for full-body tracking.
+  * **RT-DETR (Head Tracking):** Optimized for dense crowds and head detection, ignoring false positives like knees/shoes.
+* **Smart Deduplication (IoM):** Custom Intersection over Minimum Area (IoM) algorithm seamlessly merges overlapping boxes (e.g., when the AI detects both a head and a full body for the same person) to ensure hyper-accurate counting.
+* **Zombie Thread Protection:** Bulletproof thread lifecycle management ensures camera processors gracefully exit without memory leaks or Segmentation Faults during system resets.
+* **Atomic Configuration:** Camera configurations (`site_config.yaml`) are saved atomically, completely preventing file corruption during sudden power losses or crashes.
+* **Live Dashboard:** A beautiful, responsive web interface built on FastAPI and WebSockets providing live MJPEG video feeds, capacity alerts, and real-time event logs.
+* **Posture & Movement Analytics:** Capable of differentiating between sitting and standing postures, and utilizing vector-based tracking for entry/exit gates.
 
-## Folder Structure
+## 🏗️ Architecture Components
 
-```
-person-tracking-system/
-├── config/
-│   └── site_config.yaml        # Site + camera config (shared with Person B)
-├── contract.md                 # Shared event schema & queue interface
-├── requirements.txt            # Python dependencies
-├── validate.py                 # Phase 5: Validation protocol script
-├── data/
-│   └── sample_videos/          # Place test .mp4 files here (git-ignored)
-├── logs/                       # Validation CSV/JSON output (git-ignored)
-└── core/
-    ├── main_vision.py          # Entrypoint — wires adapters + pipeline → queue
-    ├── adapters/
-    │   ├── base.py             # Abstract CameraSource class
-    │   └── rtsp.py             # RTSPSource (also handles local video files)
-    └── pipeline/
-        ├── detector.py         # YOLOv8n-pose wrapper (class 0 / person only)
-        ├── tracker.py          # ByteTrack integration + frame-skip logic
-        ├── entry_exit.py       # Line-crossing + cooldown (entry/exit events)
-        └── posture.py          # Keypoint-angle posture classification
-```
+1. **Core Vision Pipeline (`/core`)**
+   * **`main_vision.py`**: The orchestration engine. Handles thread spawning, video ingestion, and routing frames through the AI.
+   * **`detector.py`**: Runs inference and applies physical heuristics (aspect ratios, sizing, IoM suppression).
+   * **`tracker.py`**: Maintains memory of tracked individuals across frames to handle occlusions and sudden model dropouts (configured with a 3.5s patience).
+2. **State Management (`/state`)**
+   * **`zone_state.py`**: Manages the logical capacity of the room (Total vs Present).
+   * **`event_queue.py`**: The central nervous system bridging the AI threads with the web server.
+3. **API Backend (`/api`)**
+   * Powered by **FastAPI**. Exposes endpoints for managing cameras and streams real-time data to the UI over WebSockets.
+4. **Frontend Dashboard (`/dashboard`)**
+   * HTML/JS interface for managing the system, adding cameras, and viewing analytics.
 
----
+## 🛠️ Setup & Installation
 
-## Setup
+### Prerequisites
+* Python 3.10+
+* Git
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ronit-j-sdms1030/person-tracking-system.git
+   cd person-tracking-system
+   ```
 
-> First run will auto-download `yolov8n-pose.pt` from Ultralytics.
+2. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
----
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   *(Ensure you install the correct PyTorch version for your CUDA/GPU setup if running hardware acceleration).*
 
-## Running
+## 🏃‍♂️ Running the System
 
-### Single camera (stdout events):
-
-```bash
-python -m core.main_vision config/site_config.yaml
-```
-
-### Both cameras concurrently:
-
-`main_vision.py` reads all cameras from `site_config.yaml` and spawns a thread per camera automatically.
-
-### Integration with Person B:
-
-Pass a shared `queue.Queue()` to `VisionRunner`:
-
-```python
-import queue
-from core.main_vision import VisionRunner
-
-shared_q = queue.Queue()   # Same instance Person B's consumer uses
-runner = VisionRunner("config/site_config.yaml", shared_q)
-runner.start()
-```
-
----
-
-## Validation (Phase 5)
-
-Place test videos in `data/sample_videos/` then run:
+To start the backend server and vision pipeline:
 
 ```bash
-# Entry/exit accuracy (20 walkthroughs)
-python validate.py --config config/site_config.yaml --mode entry_exit
-
-# Posture accuracy (30 spot-checks)
-python validate.py --config config/site_config.yaml --mode posture
+./start.sh
 ```
+*(Or manually run `python -m uvicorn api.main:app --host 0.0.0.0 --port 8000`)*
 
-Results are saved to `logs/` as CSV + JSON summary with accuracy %.
+Once started, open your web browser and navigate to:
+**http://localhost:8000**
 
----
+## ⚙️ Configuration
+The system automatically generates and atomically manages a `config/site_config.yaml` file. You do not need to edit this file manually. Use the **Camera Setup Wizard** on the web dashboard to add streams, define zones, and assign AI models.
 
-## Event Schema (from contract.md)
-
-```json
-{
-  "camera_id": "cam_door_1",
-  "timestamp": 1234567890.12,
-  "track_id": 17,
-  "bbox": [x1, y1, x2, y2],
-  "event": "entered" | "exited" | null,
-  "posture": "sitting" | "standing" | "unknown" | null
-}
-```
-
-- `event` is non-null only for `role: entry_exit` cameras, fires once per crossing after cooldown.
-- `posture` is non-null only for `role: posture` cameras, emitted every frame.
-- `event` and `posture` are mutually exclusive.
+## 🛡️ License
+Proprietary. Do not distribute without permission.
